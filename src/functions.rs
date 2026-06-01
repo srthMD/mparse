@@ -360,8 +360,8 @@ mod helpers {
       assert_eq!(gcf(6f64, 3f64), 3f64);
       assert_eq!(gcf(99f64, 2f64), 1f64);
       assert_eq!(gcf(1f64, 1f64), 1f64);
-      assert_eq!(gcf(6f64, 0f64), 0f64);
-      assert_eq!(gcf(0f64, 24f64), 0f64);
+      assert_eq!(gcf(6f64, 0f64), 6f64);
+      assert_eq!(gcf(0f64, 24f64), 24f64);
       assert_eq!(gcf(2934f64, 24f64), 6f64);
     }
 
