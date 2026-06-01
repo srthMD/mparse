@@ -35,6 +35,9 @@ pub enum FunctionEvaluationError {
   /// Thrown when a division by zero is expected within the function evaluation.
   #[error("division by zero caught during function evaluation")]
   DivisionByZero,
+  /// Thrown when I forget to acctualy implement the evaluation part of a function (oops).
+  #[error("funciton is not internally implemented")]
+  UnimplementedFunction,
 }
 
 /// QOL macro for me just to be able to display function names from the enum name.
@@ -134,10 +137,7 @@ impl FunctionType {
       "gcf" | "gcd" => Some(Self::Gcf),
       "lcm" => Some(Self::Lcm),
       "abs" => Some(Self::Abs),
-
-      #[cfg(feature = "rand")]
       "rand" | "rng" | "random" => Some(Self::Rand),
-
       "mean" | "avg" | "average" => Some(Self::Mean),
       _ => None,
     }
@@ -282,6 +282,9 @@ impl Function {
         helpers::check_args_greater_than(args, 1);
         helpers::mean(args)?
       }
+
+      #[allow(unreachable_patterns)]
+      _ => return Err(FunctionEvaluationError::UnimplementedFunction),
     };
 
     if res.is_nan() {

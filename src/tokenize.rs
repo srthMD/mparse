@@ -175,6 +175,11 @@ pub enum TokenizeErrorType {
   /// take bases.
   #[error("function {0} does not support bases")]
   FunctionDoesNotSupportBases(FunctionType),
+
+  /// Thrown when trying to use the rand function without the rand
+  /// feature enabled.
+  #[error("found rand function but mparse was not compiled with the rand feature enable")]
+  RandNotSupported,
 }
 
 /// Encapsulating struct for tokenization errors so that we can
@@ -487,6 +492,11 @@ fn tokenize_part(
             continue;
           } else {
             if let Some(ftype) = FunctionType::from_string(&word) {
+              #[cfg(not(feature = "rand"))]
+              if ftype == FunctionType::Rand {
+                return Err(TokenizeError::new(TokenizeErrorType::RandNotSupported, idx));
+              }
+
               let mut start_seek_idx = end_word_idx;
               let mut base: Option<f64> = None;
               if chars[end_word_idx] == '_' {
@@ -842,5 +852,18 @@ mod tests {
     ];
 
     assert!(compare_input_to_tokens(input, expected))
+  }
+
+  #[cfg(not(feature = "rand"))]
+  #[test]
+  fn test_unsupported_rand() {
+    let input = "rand()";
+    let parsed = tokenize(input);
+
+    assert!(parsed.is_err());
+    assert!(matches!(
+      parsed.expect_err("unreachable").err_type(),
+      TokenizeErrorType::RandNotSupported
+    ))
   }
 }
