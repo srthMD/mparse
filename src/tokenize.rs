@@ -178,7 +178,7 @@ pub enum TokenizeErrorType {
 
   /// Thrown when trying to use the rand function without the rand
   /// feature enabled.
-  #[error("found rand function but mparse was not compiled with the rand feature enable")]
+  #[error("found rand function but mparse was not compiled with the rand feature enabled")]
   RandNotSupported,
 }
 
