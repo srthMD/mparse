@@ -5,13 +5,13 @@ Please don't use this for any serious uses (i have no idea what bugs lay in here
 ## Usage
 MParse takes in a single (preferrably ASCII but Unicode works) string for evaluation. All whitespace is ignored. Here are just some examples of valid inputs.
 ```bash
-  mparse "5 * 3 + 12"
+mparse "5 * 3 + 12"
 ```
 ```bash
-  mparse "sqrt(90) % 3"
+mparse "sqrt(90) % 3"
 ```
 ```bash
-  mparse "5cos(pi/2)"
+mparse "5cos(pi/2)"
 ```  
 
 ### Operators
@@ -32,11 +32,11 @@ Here is an example of a valid usage of bases.
   
 Acts as log base 5.
 ```bash
-  mparse "log_5(20)"
+mparse "log_5(20)"
 ```
 In this case we are taking the 4th root of 16.  
 ```bash
-  mparse "root_4(16)"
+mparse "root_4(16)"
 ```
 See the FunctionType enum in  [functions.rs](./src/functions.rs) for all of the functions built into MParse.
 
