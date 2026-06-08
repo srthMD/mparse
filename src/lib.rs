@@ -1,9 +1,7 @@
 use thiserror::Error;
 
 use crate::{
-  ast::{Expression, ParseError},
-  eval::EvaluationError,
-  tokenize::{TokenizeError, Tokens},
+  ast::{Expression, ParseErrorRepr}, eval::EvaluationErrorRepr, tokenize::{TokenizeErrorRepr, Tokens}
 };
 
 pub mod ast;
@@ -17,11 +15,11 @@ pub mod tokenize;
 pub enum Error {
   // see the display impl
   #[error(transparent)]
-  TokenizeError(#[from] TokenizeError),
+  TokenizeError(#[from] TokenizeErrorRepr),
   #[error("error during expression parsing: {0}")]
-  ASTParseError(#[from] ParseError),
+  ParseError(#[from] ParseErrorRepr),
   #[error("error during evaluation: {0}")]
-  EvaluationError(#[from] EvaluationError),
+  EvaluationError(#[from] EvaluationErrorRepr),
 }
 
 /// All in one function that will do tokenization, parsing, and evaluation
@@ -34,7 +32,7 @@ pub fn parse(input_str: &str, deg_mode: bool) -> Result<f64, crate::Error> {
 
   let ast = match Expression::new(&tokens) {
     Ok(it) => it,
-    Err(err) => return Err(Error::ASTParseError(err)),
+    Err(err) => return Err(Error::ParseError(err)),
   };
 
   let result = match eval::evaluate(&ast, deg_mode) {

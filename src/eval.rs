@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::{ast::Expression, functions::FunctionEvaluationError, operators::Operation};
 
 #[derive(Debug, PartialEq, PartialOrd, Error)]
-pub enum EvaluationError {
+pub enum EvaluationErrorRepr {
   #[error("unexpected operator {0} found during evaluation")]
   UnexpectedOperator(Operation),
   #[error("{0} cannot be used as a factorial argument: {1}")]
@@ -24,7 +24,7 @@ pub enum InvalidFactorialReason {
   NegativeOrZero,
 }
 
-pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationError> {
+pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErrorRepr> {
   let mut final_result = 0f64;
 
   match expr {
@@ -34,7 +34,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErro
       let res = match op {
         Operation::Sub => evaluate(expr, deg_mode)?.neg(),
         Operation::Fac => factorial(evaluate(expr, deg_mode)?)?,
-        _ => return Err(EvaluationError::UnexpectedOperator(*op)),
+        _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
 
       final_result += res;
@@ -47,7 +47,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErro
         Operation::Div => evaluate(left, deg_mode)?.div(evaluate(right, deg_mode)?),
         Operation::Exp => evaluate(left, deg_mode)?.powf(evaluate(right, deg_mode)?),
         Operation::Mod => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?),
-        _ => return Err(EvaluationError::UnexpectedOperator(*op)),
+        _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
 
       final_result += res;
@@ -64,7 +64,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErro
 
         let arg_count = func.arg_count();
         if arg_count != results.len() && !func.supports_varargs() {
-          return Err(EvaluationError::InvalidArgumentCount {
+          return Err(EvaluationErrorRepr::InvalidArgumentCount {
             required: arg_count,
             given: results.len(),
           });
@@ -76,7 +76,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErro
       if let Ok(yipee) = res {
         final_result += yipee
       } else {
-        return Err(EvaluationError::FunctionEvaluationError(
+        return Err(EvaluationErrorRepr::FunctionEvaluationError(
           res.expect_err("unreachable"),
         ));
       }
@@ -86,16 +86,16 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<f64, EvaluationErro
   Ok(final_result)
 }
 
-fn factorial(num: f64) -> Result<f64, EvaluationError> {
+fn factorial(num: f64) -> Result<f64, EvaluationErrorRepr> {
   if num < 0f64 {
-    return Err(EvaluationError::InvalidFactorialArg(
+    return Err(EvaluationErrorRepr::InvalidFactorialArg(
       num,
       InvalidFactorialReason::NegativeOrZero,
     ));
   }
 
   if num.fract() != 0f64 {
-    return Err(EvaluationError::InvalidFactorialArg(
+    return Err(EvaluationErrorRepr::InvalidFactorialArg(
       num,
       InvalidFactorialReason::RationalNumber,
     ));

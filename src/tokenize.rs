@@ -6,7 +6,7 @@
 
 use thiserror::Error;
 
-use crate::ast::ParseError;
+use crate::ast::ParseErrorRepr;
 use crate::constants::Constant;
 use crate::functions::Function;
 use crate::functions::FunctionType;
@@ -36,7 +36,7 @@ impl Tokens {
   /// Tokenization by itself will also conduct some checks on the validity of
   /// the string, mostly for function calls. See [TokenizeErrorType] for
   /// a general idea of what tokenization will check for.
-  pub fn new(input_str: &str) -> Result<Self, TokenizeError> {
+  pub fn new(input_str: &str) -> Result<Self, TokenizeErrorRepr> {
     let result = tokenize(input_str)?;
     Ok(Self {
       tokens: result,
@@ -75,11 +75,11 @@ impl Tokens {
       .unwrap_or(Token::Eof)
   }
 
-  pub(crate) fn expect(&self, other: Token) -> Result<Token, ParseError> {
+  pub(crate) fn expect(&self, other: Token) -> Result<Token, ParseErrorRepr> {
     let next = self.next();
 
     if next != other {
-      Err(ParseError::UnexpectedToken {
+      Err(ParseErrorRepr::UnexpectedToken {
         tok: next,
         expected: other,
       })
@@ -185,12 +185,12 @@ pub enum TokenizeErrorType {
 /// Encapsulating struct for tokenization errors so that we can
 /// pass an index.
 #[derive(Debug, PartialEq, Clone, PartialOrd, Error)]
-pub struct TokenizeError {
+pub struct TokenizeErrorRepr {
   err_type: TokenizeErrorType,
   index: usize,
 }
 
-impl TokenizeError {
+impl TokenizeErrorRepr {
   pub fn new(err_type: TokenizeErrorType, idx: usize) -> Self {
     Self {
       err_type,
@@ -211,7 +211,7 @@ impl TokenizeError {
   }
 }
 
-impl Display for TokenizeError {
+impl Display for TokenizeErrorRepr {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
@@ -227,7 +227,7 @@ mod util {
   use crate::{
     functions::FunctionType,
     tokenize::{
-      Constant, Token, TokenizeError,
+      Constant, Token, TokenizeErrorRepr,
       TokenizeErrorType::{self},
     },
   };
@@ -353,10 +353,10 @@ mod util {
     word: &String,
     idx: usize,
     end_idx: usize,
-  ) -> Result<(f64, usize), TokenizeError> {
+  ) -> Result<(f64, usize), TokenizeErrorRepr> {
     // if a function is going to have a base there should be atleast two more characters
     if chars.len() <= end_idx + 3 {
-      return Err(TokenizeError::new(
+      return Err(TokenizeErrorRepr::new(
         TokenizeErrorType::MalformedFunction(word.clone()),
         idx,
       ));
@@ -378,7 +378,7 @@ mod util {
     }
 
     if !is_ascii_numeric(char_to_test as char) {
-      return Err(TokenizeError::new(
+      return Err(TokenizeErrorRepr::new(
         TokenizeErrorType::NonNumericalBase(ftype),
         idx,
       ));
@@ -394,13 +394,13 @@ mod util {
 
       if next_char_idx_opt.is_some() && next_bracket_idx_opt.is_some() {
         if next_char_idx_opt.expect("unreachable") != next_bracket_idx_opt.expect("unreachable") {
-          return Err(TokenizeError::new(
+          return Err(TokenizeErrorRepr::new(
             TokenizeErrorType::NonNumericalBase(ftype),
             idx,
           ));
         }
       } else {
-        return Err(TokenizeError::new(
+        return Err(TokenizeErrorRepr::new(
           TokenizeErrorType::MalformedFunction(word.clone()),
           idx,
         ));
@@ -414,7 +414,7 @@ mod util {
 
       return Ok((base, num_end_idx));
     } else {
-      return Err(TokenizeError::new(
+      return Err(TokenizeErrorRepr::new(
         TokenizeErrorType::NumberParseError,
         num_parse_idx,
       ));
@@ -450,7 +450,7 @@ fn tokenize_part(
   chars: &Vec<char>,
   start_idx: usize,
   end_idx: usize,
-) -> Result<Vec<Token>, TokenizeError> {
+) -> Result<Vec<Token>, TokenizeErrorRepr> {
   let mut idx = start_idx;
   let mut tokens = vec![];
 
@@ -464,7 +464,10 @@ fn tokenize_part(
           idx = end_num_idx;
           continue;
         } else {
-          return Err(TokenizeError::new(TokenizeErrorType::NumberParseError, idx));
+          return Err(TokenizeErrorRepr::new(
+            TokenizeErrorType::NumberParseError,
+            idx,
+          ));
         }
       }
 
@@ -494,14 +497,24 @@ fn tokenize_part(
             if let Some(ftype) = FunctionType::from_string(&word) {
               #[cfg(not(feature = "rand"))]
               if ftype == FunctionType::Rand {
-                return Err(TokenizeError::new(TokenizeErrorType::RandNotSupported, idx));
+                return Err(TokenizeErrorRepr::new(
+                  TokenizeErrorType::RandNotSupported,
+                  idx,
+                ));
+              }
+
+              if end_word_idx >= chars.len() {
+                return Err(TokenizeErrorRepr::new(
+                  TokenizeErrorType::MalformedFunction(word.clone()),
+                  idx,
+                ));
               }
 
               let mut start_seek_idx = end_word_idx;
               let mut base: Option<f64> = None;
               if chars[end_word_idx] == '_' {
                 if !ftype.supports_base() {
-                  return Err(TokenizeError::new(
+                  return Err(TokenizeErrorRepr::new(
                     TokenizeErrorType::FunctionDoesNotSupportBases(ftype),
                     idx,
                   ));
@@ -516,13 +529,13 @@ fn tokenize_part(
 
               if let Some(next_char_idx) = seek_next_non_whitespace_char(chars, start_seek_idx) {
                 if util::char_is_bracket(chars[next_char_idx]).is_none() {
-                  return Err(TokenizeError::new(
+                  return Err(TokenizeErrorRepr::new(
                     TokenizeErrorType::MalformedFunction(word.clone()),
                     idx,
                   ));
                 }
               } else {
-                return Err(TokenizeError::new(
+                return Err(TokenizeErrorRepr::new(
                   TokenizeErrorType::MalformedFunction(word.clone()),
                   idx,
                 ));
@@ -533,7 +546,7 @@ fn tokenize_part(
               idx = start_seek_idx;
               continue;
             } else {
-              return Err(TokenizeError::new(
+              return Err(TokenizeErrorRepr::new(
                 TokenizeErrorType::InvalidSymbol(word),
                 idx,
               ));
@@ -560,11 +573,11 @@ fn tokenize_part(
 }
 
 /// Entry point for tokenization.
-fn tokenize(input_str: &str) -> Result<Vec<Token>, TokenizeError> {
+fn tokenize(input_str: &str) -> Result<Vec<Token>, TokenizeErrorRepr> {
   let trim = input_str.trim();
 
   if trim.is_empty() {
-    return Err(TokenizeError::new(TokenizeErrorType::EmptyString, 0));
+    return Err(TokenizeErrorRepr::new(TokenizeErrorType::EmptyString, 0));
   }
 
   let chars: Vec<char> = trim.chars().collect();

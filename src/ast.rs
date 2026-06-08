@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Debug, Error, PartialEq, PartialOrd)]
-pub enum ParseError {
+pub enum ParseErrorRepr {
   #[error("unexpected token while parsing, expected {expected:?}, found {tok:?}")]
   UnexpectedToken { tok: Token, expected: Token },
 
@@ -21,13 +21,13 @@ pub enum ParseError {
   UnexpectedOperator(Operation),
 }
 
-impl ParseError {
+impl ParseErrorRepr {
   pub fn make_unexpected(tok: Token, expected: Token) -> Self {
-    ParseError::UnexpectedToken { tok, expected }
+    ParseErrorRepr::UnexpectedToken { tok, expected }
   }
 
   pub fn make_invalid_seq(first: Token, second: Token) -> Self {
-    ParseError::InvalidTokenSequence { first, second }
+    ParseErrorRepr::InvalidTokenSequence { first, second }
   }
 }
 
@@ -54,7 +54,7 @@ pub enum Expression {
 }
 
 impl Expression {
-  pub fn new(tokens: &Tokens) -> Result<Expression, ParseError> {
+  pub fn new(tokens: &Tokens) -> Result<Expression, ParseErrorRepr> {
     expr(tokens, 0)
   }
 }
@@ -92,7 +92,7 @@ impl Display for Expression {
   }
 }
 
-fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
+fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
   let tok = tokens.next();
 
   let mut lhs = match tok {
@@ -109,7 +109,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
       }
 
       _ => {
-        return Err(ParseError::UnexpectedOperator(op));
+        return Err(ParseErrorRepr::UnexpectedOperator(op));
       }
     },
 
@@ -132,7 +132,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
 
       let next = tokens.next();
       if next != Token::CloseBracket && next != Token::Eof {
-        return Err(ParseError::make_invalid_seq(tok, next));
+        return Err(ParseErrorRepr::make_invalid_seq(tok, next));
       }
 
       Expression::Function {
@@ -151,7 +151,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
     }
 
     _ => {
-      return Err(ParseError::make_invalid_seq(tok, tokens.peek()));
+      return Err(ParseErrorRepr::make_invalid_seq(tok, tokens.peek()));
     }
   };
 
@@ -169,7 +169,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
 
       #[allow(unreachable_patterns)]
       _ => {
-        return Err(ParseError::make_invalid_seq(tok, tokens.peek()));
+        return Err(ParseErrorRepr::make_invalid_seq(tok, tokens.peek()));
       }
     };
 
@@ -202,7 +202,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseError> {
       };
       continue;
     } else {
-      return Err(ParseError::UnexpectedOperator(op));
+      return Err(ParseErrorRepr::UnexpectedOperator(op));
     }
   }
 
