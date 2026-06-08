@@ -62,6 +62,10 @@ See the FunctionType enum in [functions.rs](./src/functions.rs) for all of the f
 
 MParse supports expressions like "4pi" or "2sqrt(9)" and the parser will assume to preform a multiplication if nessecary. It also works on the right hand side (i.e. "ln(9.5)8" ) (its kind of ugly though).
 
+## Building
+
+By default MParse builds as a library, to build the additional cli tool you need to enable the "cli" feature when building.
+
 ## Credits
 
 Thanks to [this](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html) blog post from matklad because I had no idea how to implement the AST before reading it.
