@@ -1,7 +1,16 @@
-use std::io::{self, BufRead};
+use std::{
+  io::{self, BufRead},
+  process::exit,
+};
 
 use clap::Parser;
-use mparse::{Error, ast::Expression, eval, tokenize::Tokens};
+use mparse::{
+  Error,
+  ast::Expression,
+  eval,
+  tokenize::Tokens,
+  types::{object::Object, vector::Vector},
+};
 
 /// A CLI wrapper around the mparse library for parsing and evaluating basic mathematical expressions from plaintext.
 #[derive(Parser, Debug)]
@@ -10,11 +19,11 @@ struct Args {
   input: Option<String>,
 
   /// Displays the expression as the tokens it parsed.
-  #[arg(short = 't', long)]
+  #[arg(long)]
   print_tokens: bool,
 
   /// Displays the expression parsed into its AST form.
-  #[arg(short = 'a', long)]
+  #[arg(long)]
   print_ast: bool,
 
   /// Evaluates trigonometric functions in degrees instead of radians.
@@ -22,12 +31,38 @@ struct Args {
   deg_mode: bool,
 
   /// Do not attempt to apply any tolerance to the result.
-  #[arg(short = 'n', long = "nt")]
+  #[arg(short = 'n', long = "no-tolerance")]
   no_tolerance: bool,
 }
 
+fn apply_tolerance(obj: Object) -> Object {
+  match obj {
+    Object::Number(n) => apply_tolerance_f64(n).into(),
+    Object::Vector(vector) => apply_tolerance_vector(vector).into(),
+    Object::Null => obj,
+  }
+}
+
+fn apply_tolerance_vector(vec: Vector) -> Vector {
+  match vec {
+    Vector::Vec2D { x: x1, y: y1 } => Vector::Vec2D {
+      x: apply_tolerance_f64(x1),
+      y: apply_tolerance_f64(y1),
+    },
+    Vector::Vec3D {
+      x: x1,
+      y: y1,
+      z: z1,
+    } => Vector::Vec3D {
+      x: apply_tolerance_f64(x1),
+      y: apply_tolerance_f64(y1),
+      z: apply_tolerance_f64(z1),
+    },
+  }
+}
+
 const EPSILION: f64 = 1e-12;
-fn apply_tolerance(flt: f64) -> f64 {
+fn apply_tolerance_f64(flt: f64) -> f64 {
   if flt.abs() < EPSILION {
     return 0f64;
   }
@@ -57,6 +92,11 @@ fn main() {
       let mut input_str = String::new();
       let mut lock = stdin.lock();
       let _ = lock.read_line(&mut input_str).expect("read line error");
+
+      if input_str.trim() == "exit" {
+        exit(0)
+      }
+
       args.input = Some(input_str);
 
       let res = parse(&args);
@@ -70,7 +110,7 @@ fn main() {
   };
 }
 
-fn parse(args: &Args) -> Result<f64, Error> {
+fn parse(args: &Args) -> Result<Object, Error> {
   let tokens_res = Tokens::new(args.input.as_ref().expect("unreachable").as_str());
   match tokens_res {
     Err(e) => {

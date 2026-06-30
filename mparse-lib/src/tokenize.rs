@@ -273,7 +273,7 @@ mod util {
       }
 
       let chr = chars[current_idx];
-      if chr.is_ascii_alphabetic() {
+      if chr.is_ascii_alphanumeric() {
         s.push(chr as char);
       } else {
         break;

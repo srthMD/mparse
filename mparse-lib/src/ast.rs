@@ -28,6 +28,7 @@ impl ParseErrorRepr {
 
   pub fn make_invalid_seq(first: Token, second: Token) -> Self {
     ParseErrorRepr::InvalidTokenSequence { first, second }
+
   }
 }
 

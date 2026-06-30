@@ -1,7 +1,7 @@
 # MParse
 
 A simple library for parsing and evaluating basic mathematical expressions from plaintext.  
-Please don't use this for any serious uses (i have no idea what bugs lay in here), i mainly just made this for fun.
+Please don't use this for any serious uses (i have no idea what bugs lay in here), I mainly just made this for fun.
 
 ## Usage
 
@@ -18,6 +18,9 @@ mparse "sqrt(90) % 3"
 ```bash
 mparse "5cos(pi/2)"
 ```
+
+> [!WARNING]  
+> Some of the content below may be out of date or undocumented as of 1.0.0, specifically vectors and types. 
 
 ### Operators
 

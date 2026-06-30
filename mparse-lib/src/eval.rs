@@ -1,0 +1,196 @@
+use std::{
+  fmt::{self},
+  ops::{Add, Div, Mul, Neg, Rem, Sub},
+  vec,
+};
+
+use thiserror::Error;
+
+use crate::{
+  ast::Expression,
+  functions::{FunctionEvaluationError, FunctionType},
+  operators::Operation,
+  types::{
+    object::{Object, ObjectKind},
+    vector::Vector,
+  },
+};
+
+#[derive(Debug, PartialEq, PartialOrd, Error)]
+pub enum EvaluationErrorRepr {
+  #[error("unexpected operator {0} found during evaluation")]
+  UnexpectedOperator(Operation),
+  #[error(fmt = fmt_function_evaluation_err)]
+  FunctionEvaluationError(FunctionType, FunctionEvaluationError),
+  #[error("{0} cannot be used as a factorial argument: {1}")]
+  InvalidFactorialArg(f64, InvalidFactorialReason),
+  #[error(fmt = fmt_type_error)]
+  TypeError {
+    obj1: Object,
+    obj2: Object,
+    reason: TypeErrorReason,
+  },
+}
+
+fn fmt_function_evaluation_err(
+  ftype: &FunctionType,
+  err: &FunctionEvaluationError,
+  f: &mut fmt::Formatter,
+) -> fmt::Result {
+  write!(
+    f,
+    "error evaluating function {}: {}",
+    ftype.as_str().to_lowercase(),
+    err
+  )
+}
+
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum TypeErrorReason {
+  IncompatibleTypes,
+  IncompatibleTypeOp(Operation),
+  InvalidCast(ObjectKind),
+}
+
+fn fmt_type_error(
+  obj1: &Object,
+  obj2: &Object,
+  reason: &TypeErrorReason,
+  f: &mut fmt::Formatter,
+) -> fmt::Result {
+  match reason {
+    TypeErrorReason::IncompatibleTypes => write!(
+      f,
+      "type {} is completley incompatible with {} (no possible operations)",
+      obj1.stringify_type(),
+      obj2.stringify_type()
+    ),
+    TypeErrorReason::IncompatibleTypeOp(operation) => write!(
+      f,
+      "cannot preform operation \'{}\' between {} and {}",
+      operation.as_str(),
+      obj1.stringify_type(),
+      obj2.stringify_type(),
+    ),
+    TypeErrorReason::InvalidCast(type_name) => {
+      write!(f, "cannot cast {} to {}", obj1.stringify_type(), type_name)
+    }
+  }
+}
+
+#[derive(Debug, PartialEq, PartialOrd, Error)]
+pub enum InvalidFactorialReason {
+  #[error("input must be an integer")]
+  RationalNumber,
+  #[error("input must be positive and non zero")]
+  NegativeOrZero,
+}
+
+pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationErrorRepr> {
+  let mut final_result = Object::Null;
+
+  match expr {
+    Expression::Number(n) => final_result.checked_add_assign((*n).into())?,
+    Expression::Constant(constant) => {
+      final_result.checked_add_assign(constant.get_value().into())?
+    }
+
+    Expression::Unary { op, expr } => {
+      let res = match op {
+        Operation::Sub => evaluate(expr, deg_mode)?.neg(),
+        Operation::Fac => factorial(evaluate(expr, deg_mode)?)?,
+        _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
+      };
+
+      final_result.checked_add_assign(res)?;
+    }
+
+    Expression::Binary { op, left, right } => {
+      let res = match op {
+        //im questioning everything get it so funyn hahah ha h🤣🤣🤣🤣🤣🤣🤣🤣⚠️
+        Operation::Add => evaluate(left, deg_mode)?.add(evaluate(right, deg_mode)?)?,
+        Operation::Sub => evaluate(left, deg_mode)?.sub(evaluate(right, deg_mode)?)?,
+        Operation::Mul => evaluate(left, deg_mode)?.mul(evaluate(right, deg_mode)?)?,
+        Operation::Div => evaluate(left, deg_mode)?.div(evaluate(right, deg_mode)?)?,
+        Operation::Exp => evaluate(left, deg_mode)?.powf(evaluate(right, deg_mode)?)?,
+        Operation::Mod => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?)?,
+        _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
+      };
+
+      final_result.checked_add_assign(res)?;
+    }
+
+    Expression::Function { func, exprs } => {
+      let mut results = vec![];
+
+      for exp in exprs {
+        results.push(evaluate(exp, deg_mode)?);
+      }
+
+      let res = func.eval(results, deg_mode);
+      if let Ok(mut yipee) = res {
+        if func.get_function_type().outputs_angle() && deg_mode {
+          // if the function outputs an angle it has to be a number, right... RIGHT?????
+          let num: f64 = yipee.try_into().expect("unreachable");
+          yipee = num.to_degrees().into();
+        }
+
+        final_result.checked_add_assign(yipee)?
+      } else {
+        return res;
+      }
+    }
+  }
+
+  Ok(final_result)
+}
+
+fn factorial(obj: Object) -> Result<Object, EvaluationErrorRepr> {
+  match obj {
+    Object::Null => todo!(),
+    Object::Vector(vector) => Ok(factorial_vec(&vector)?.into()),
+    Object::Number(num) => Ok(factorial_f64(num)?.into()),
+  }
+}
+
+fn factorial_f64(num: f64) -> Result<f64, EvaluationErrorRepr> {
+  if num < 0f64 {
+    return Err(EvaluationErrorRepr::InvalidFactorialArg(
+      num,
+      InvalidFactorialReason::NegativeOrZero,
+    ));
+  }
+
+  if num.fract() != 0f64 {
+    return Err(EvaluationErrorRepr::InvalidFactorialArg(
+      num,
+      InvalidFactorialReason::RationalNumber,
+    ));
+  }
+
+  let mut res = 1f64;
+
+  for i in 1..=(num as u64) {
+    res *= i as f64;
+  }
+
+  return Ok(res);
+}
+
+fn factorial_vec(vec: &Vector) -> Result<Vector, EvaluationErrorRepr> {
+  match vec {
+    Vector::Vec2D { x: x1, y: y1 } => Ok(Vector::Vec2D {
+      x: factorial_f64(*x1)?,
+      y: factorial_f64(*y1)?,
+    }),
+    Vector::Vec3D {
+      x: x1,
+      y: y1,
+      z: z1,
+    } => Ok(Vector::Vec3D {
+      x: factorial_f64(*x1)?,
+      y: factorial_f64(*y1)?,
+      z: factorial_f64(*z1)?,
+    }),
+  }
+}

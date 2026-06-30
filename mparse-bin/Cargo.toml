@@ -1,0 +1,8 @@
+[package]
+name = "mparse-bin"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+clap = {version = "4", features = ["derive"]}
+mparse = { path = "../mparse-lib" }
