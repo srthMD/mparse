@@ -13,7 +13,7 @@ pub enum Operation {
   Mul,
   Div,
   Exp,
-  Mod,
+  Rem,
   Fac,
   /// Not a real operator, used interally for the type checking error reporting. 
   /// Paranormal events will occur if you construct it.
@@ -28,7 +28,7 @@ impl Operation {
       Self::Mul => "*",
       Self::Div => "/",
       Self::Exp => "^",
-      Self::Mod => "%",
+      Self::Rem => "%",
       Self::Fac => "!",
       Self::Func(_) => unreachable!(),
     }
@@ -44,7 +44,7 @@ impl Operation {
       '*' | '×' => Some(Operation::Mul),
       '/' | '÷' => Some(Operation::Div),
       '^' => Some(Operation::Exp),
-      '%' => Some(Operation::Mod),
+      '%' => Some(Operation::Rem),
       '!' => Some(Operation::Fac),
       _ => None,
     }
@@ -57,7 +57,7 @@ impl Operation {
   pub fn get_infix_bp(&self) -> Option<(u8, u8)> {
     match self {
       Self::Add | Self::Sub => Some((1, 2)),
-      Self::Mul | Self::Div | Self::Mod => Some((5, 6)),
+      Self::Mul | Self::Div | Self::Rem => Some((5, 6)),
       Self::Exp => Some((10, 11)),
       _ => None,
     }

@@ -9,7 +9,10 @@ use mparse::{
   ast::Expression,
   eval,
   tokenize::Tokens,
-  types::{object::Object, vector::Vector},
+  types::{
+    object::Object,
+    vector::{Vec2D, Vec3D},
+  },
 };
 
 /// A CLI wrapper around the mparse library for parsing and evaluating basic mathematical expressions from plaintext.
@@ -37,27 +40,25 @@ struct Args {
 
 fn apply_tolerance(obj: Object) -> Object {
   match obj {
-    Object::Number(n) => apply_tolerance_f64(n).into(),
-    Object::Vector(vector) => apply_tolerance_vector(vector).into(),
     Object::Null => obj,
+    Object::Number(n) => apply_tolerance_f64(n).into(),
+    Object::Vec2D(vec2_d) => apply_tolerance_vec2d(vec2_d).into(),
+    Object::Vec3D(vec3_d) => apply_tolerance_vec3d(vec3_d).into(),
   }
 }
 
-fn apply_tolerance_vector(vec: Vector) -> Vector {
-  match vec {
-    Vector::Vec2D { x: x1, y: y1 } => Vector::Vec2D {
-      x: apply_tolerance_f64(x1),
-      y: apply_tolerance_f64(y1),
-    },
-    Vector::Vec3D {
-      x: x1,
-      y: y1,
-      z: z1,
-    } => Vector::Vec3D {
-      x: apply_tolerance_f64(x1),
-      y: apply_tolerance_f64(y1),
-      z: apply_tolerance_f64(z1),
-    },
+fn apply_tolerance_vec2d(vec: Vec2D) -> Vec2D {
+  Vec2D {
+    x: apply_tolerance_f64(vec.x),
+    y: apply_tolerance_f64(vec.y),
+  }
+}
+
+fn apply_tolerance_vec3d(vec: Vec3D) -> Vec3D {
+  Vec3D {
+    x: apply_tolerance_f64(vec.x),
+    y: apply_tolerance_f64(vec.y),
+    z: apply_tolerance_f64(vec.z),
   }
 }
 

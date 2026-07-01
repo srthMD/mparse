@@ -473,6 +473,8 @@ impl Display for FunctionType {
 }
 
 mod impls {
+  use std::vec;
+
   use rand::random;
 
   use super::{BuiltinArgs, ObjectKind};
@@ -484,8 +486,11 @@ mod impls {
       helpers,
     },
     types::{
-      object::Object::{self},
-      vector::{Vector, VectorKind},
+      object::{
+        Object::{self},
+        ObjectKind::AnyOf,
+      },
+      vector::{Vec2D, Vec3D},
     },
   };
 
@@ -570,14 +575,12 @@ mod impls {
     };
   }
 
-  #[allow(dead_code)]
   pub(super) fn rand(_: &Function, _: &[Object]) -> BuiltinFnOutput {
     Ok(random::<f64>().into())
   }
   decl_arg_types!(rand);
   decl_returns! {rand, Number}
 
-  #[allow(dead_code)]
   pub(super) fn log(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
     let arg0: f64 = args[0].try_into()?;
     if self_func.has_base() {
@@ -592,7 +595,6 @@ mod impls {
   decl_arg_types! {log, Number}
   decl_returns! {log, Number}
 
-  #[allow(dead_code)]
   pub(super) fn root(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
     let arg0: f64 = args[0].try_into()?;
     if self_func.has_base() {
@@ -615,7 +617,6 @@ mod impls {
   decl_arg_types! {root, Number}
   decl_returns! {root, Number}
 
-  #[allow(dead_code)]
   pub fn mean(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
     let mut flts: Vec<f64> = vec![];
 
@@ -634,7 +635,6 @@ mod impls {
   decl_arg_types! {mean, vararg: Number}
   decl_returns! {mean, Number}
 
-  #[allow(dead_code)]
   pub fn gcf(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     let mut res: f64 = args[0].try_into()?;
 
@@ -650,7 +650,6 @@ mod impls {
   decl_arg_types! {gcf, Number Number, vararg: Number}
   decl_returns! {gcf, Number}
 
-  #[allow(dead_code)]
   pub fn lcm(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
     let mut res: f64 = args[0].try_into()?;
 
@@ -674,10 +673,9 @@ mod impls {
   decl_arg_types! {lcm, Number Number, vararg: Number}
   decl_returns! {lcm, Number}
 
-  #[allow(dead_code)]
   pub fn vec2d(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     Ok(
-      Vector::Vec2D {
+      Vec2D {
         x: args[0].try_into()?,
         y: args[1].try_into()?,
       }
@@ -685,12 +683,11 @@ mod impls {
     )
   }
   decl_arg_types! {vec2d, Number Number}
-  decl_returns! {vec2d, Vector(VectorKind::Vec2D)}
+  decl_returns! {vec2d, Vec2D}
 
-  #[allow(dead_code)]
   pub fn vec3d(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     Ok(
-      Vector::Vec3D {
+      Vec3D {
         x: args[0].try_into()?,
         y: args[1].try_into()?,
         z: args[2].try_into()?,
@@ -699,152 +696,217 @@ mod impls {
     )
   }
   decl_arg_types! {vec3d, Number Number Number}
-  decl_returns! {vec3d, Vector(VectorKind::Vec3D)}
+  decl_returns! {vec3d, Vec3D}
 
-  #[allow(dead_code)]
   pub fn floor(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
       Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.floor().into()),
-      Object::Vector(vector) => Ok(vector.floor().into()),
+      Object::Vec2D(v) => Ok(v.floor().into()),
+      Object::Vec3D(v) => Ok(v.floor().into()),
     }
   }
-  decl_arg_types! {floor, anyof: (Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {floor, anyof: Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {floor, anyof: (Number, Vec2D, Vec3D)}
+  decl_returns! {floor, anyof: Number, Vec2D, Vec3D}
 
-  #[allow(dead_code)]
   pub fn ceil(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
       Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.ceil().into()),
-      Object::Vector(vector) => Ok(vector.ceil().into()),
+      Object::Vec2D(v) => Ok(v.ceil().into()),
+      Object::Vec3D(v) => Ok(v.ceil().into()),
     }
   }
-  decl_arg_types! {ceil, anyof: (Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {ceil, anyof: Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {ceil, anyof: (Number, Vec2D, Vec3D)}
+  decl_returns! {ceil, anyof: Number, Vec2D, Vec3D}
 
-  #[allow(dead_code)]
   pub fn abs(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
       Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.abs().into()),
-      Object::Vector(vector) => Ok(vector.abs().into()),
+      Object::Vec2D(v) => Ok(v.abs().into()),
+      Object::Vec3D(v) => Ok(v.abs().into()),
     }
   }
-  decl_arg_types! {abs, anyof: (Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {abs, anyof: Number, Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {abs, anyof: (Number, Vec2D, Vec3D)}
+  decl_returns! {abs, anyof: Number, Vec2D, Vec3D}
 
-  #[allow(dead_code)]
-  pub fn magnitude(_: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec: Vector = args[0].try_into()?;
-    Ok(as_vec.magnitude().into())
+  pub fn magnitude(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
+    match args[0] {
+      Object::Vec2D(vec2_d) => Ok(vec2_d.unit().into()),
+      Object::Vec3D(vec3_d) => Ok(vec3_d.unit().into()),
+      _ => Err(EvaluationErrorRepr::FunctionEvaluationError(
+        self_func.ftype,
+        FunctionEvaluationError::InvalidArgument {
+          obj: args[0].kind(),
+          expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+          idx: 0,
+        },
+      )),
+    }
   }
-  decl_arg_types! {magnitude, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {magnitude, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
 
-  #[allow(dead_code)]
-  pub fn unit(_: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec: Vector = args[0].try_into()?;
-    Ok(as_vec.unit().into())
+  decl_arg_types! {magnitude, anyof: (Vec2D, Vec3D)}
+  decl_returns! {magnitude, anyof: Vec2D, Vec3D}
+
+  pub fn unit(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
+    match args[0] {
+      Object::Vec2D(vec2_d) => Ok(vec2_d.unit().into()),
+      Object::Vec3D(vec3_d) => Ok(vec3_d.unit().into()),
+      _ => Err(EvaluationErrorRepr::FunctionEvaluationError(
+        self_func.ftype,
+        FunctionEvaluationError::InvalidArgument {
+          obj: args[0].kind(),
+          expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+          idx: 0,
+        },
+      )),
+    }
   }
-  decl_arg_types! {unit, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {unit, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {unit, anyof: (Vec2D, Vec3D)}
+  decl_returns! {unit, anyof: Vec2D, Vec3D}
 
-  #[allow(dead_code)]
   pub fn distance(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[0].try_into()?;
+    match (args[0], args[1]) {
+      (Object::Vec2D(vec1), Object::Vec2D(vec2)) => Ok(vec1.distance(vec2).into()),
+      (Object::Vec3D(vec1), Object::Vec3D(vec2)) => Ok(vec1.distance(vec2).into()),
 
-    match as_vec1.distance(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
+      (_, Object::Vec2D(_) | Object::Vec3D(_)) => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[0].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 0,
+          },
+        ))
+      }
+
+      (Object::Vec2D(_) | Object::Vec3D(_), _) | _ => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[1].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 1,
+          },
+        ))
+      }
     }
   }
-  decl_arg_types! {distance, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)), anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {distance, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {distance, anyof: (Vec2D, Vec3D), anyof: (Vec2D, Vec3D)}
+  decl_returns! {distance, anyof: Vec2D, Vec3D}
 
-  #[allow(dead_code)]
   pub fn project(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[0].try_into()?;
+    match (args[0], args[1]) {
+      (Object::Vec2D(vec1), Object::Vec2D(vec2)) => Ok(vec1.project(vec2).into()),
+      (Object::Vec3D(vec1), Object::Vec3D(vec2)) => Ok(vec1.project(vec2).into()),
 
-    match as_vec1.project(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
+      (_, Object::Vec2D(_) | Object::Vec3D(_)) => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[0].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 0,
+          },
+        ))
+      }
+
+      (Object::Vec2D(_) | Object::Vec3D(_), _) | _ => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[1].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 1,
+          },
+        ))
+      }
     }
   }
-  decl_arg_types! {project, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)), anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {project, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {project, anyof: (Vec2D, Vec3D), anyof: (Vec2D, Vec3D)}
+  decl_returns! {project, anyof: Vec2D, Vec3D}
 
-  #[allow(dead_code)]
   pub fn dot(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[0].try_into()?;
+    match (args[0], args[1]) {
+      (Object::Vec2D(vec1), Object::Vec2D(vec2)) => Ok(vec1.dot(vec2).into()),
+      (Object::Vec3D(vec1), Object::Vec3D(vec2)) => Ok(vec1.dot(vec2).into()),
 
-    match as_vec1.dot(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
+      (_, Object::Vec2D(_) | Object::Vec3D(_)) => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[0].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 0,
+          },
+        ))
+      }
+
+      (Object::Vec2D(_) | Object::Vec3D(_), _) | _ => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[1].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 1,
+          },
+        ))
+      }
     }
   }
-  decl_arg_types! {dot, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)), anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {dot, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {dot, anyof: (Vec2D, Vec3D), anyof: (Vec2D, Vec3D)}
+  decl_returns! {dot, Number}
 
-  #[allow(dead_code)]
-  pub fn angle(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[1].try_into()?;
-
-    match as_vec1.angle(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
-    }
+  pub fn angle(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let as_vec1: Vec2D = args[0].try_into()?;
+    let as_vec2: Vec2D = args[1].try_into()?;
+    Ok(as_vec1.angle(as_vec2).into())
   }
-  decl_arg_types! {angle, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)), anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {angle, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {angle, Vec2D Vec2D}
+  decl_returns! {angle, Vec2D}
 
-  #[allow(dead_code)]
-  pub fn signedangle(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[1].try_into()?;
-
-    match as_vec1.signed_angle_2d(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
-    }
+  // boo hoo its not snake case
+  pub fn signedangle(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let as_vec1: Vec2D = args[0].try_into()?;
+    let as_vec2: Vec2D = args[1].try_into()?;
+    Ok(as_vec1.signed_angle_2d(as_vec2).into())
   }
-  decl_arg_types! {signedangle, Vector(VectorKind::Vec2D) Vector(VectorKind::Vec2D)}
-  decl_returns! {signedangle, Vector(VectorKind::Vec2D)}
+  decl_arg_types! {signedangle, Vec2D Vec2D}
+  decl_returns! {signedangle, Vec2D}
 
   #[allow(dead_code)]
   pub fn cross(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
-    let as_vec1: Vector = args[0].try_into()?;
-    let as_vec2: Vector = args[1].try_into()?;
+    match (args[0], args[1]) {
+      (Object::Vec2D(vec1), Object::Vec2D(vec2)) => Ok(vec1.cross(vec2).into()),
+      (Object::Vec3D(vec1), Object::Vec3D(vec2)) => Ok(vec1.cross(vec2).into()),
 
-    match as_vec1.cross(as_vec2) {
-      Ok(vec) => Ok(vec.into()),
-      Err(e) => Err(EvaluationErrorRepr::FunctionEvaluationError(
-        self_func.ftype,
-        e,
-      )),
+      (_, Object::Vec2D(_) | Object::Vec3D(_)) => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[0].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 0,
+          },
+        ))
+      }
+
+      (Object::Vec2D(_) | Object::Vec3D(_), _) | _ => {
+        Err(EvaluationErrorRepr::FunctionEvaluationError(
+          self_func.ftype,
+          FunctionEvaluationError::InvalidArgument {
+            obj: args[1].kind(),
+            expected: AnyOf(&[ObjectKind::Vec2D, ObjectKind::Vec3D]),
+            idx: 1,
+          },
+        ))
+      }
     }
   }
-  decl_arg_types! {cross, anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)), anyof: (Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D))}
-  decl_returns! {cross, anyof: Vector(VectorKind::Vec2D), Vector(VectorKind::Vec3D)}
+  decl_arg_types! {cross, anyof: (Vec2D, Vec3D), anyof: (Vec2D, Vec3D)}
+  decl_returns! {cross, anyof: Vec2D, Vec3D}
 }
 
 mod helpers {

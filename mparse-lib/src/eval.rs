@@ -12,7 +12,7 @@ use crate::{
   operators::Operation,
   types::{
     object::{Object, ObjectKind},
-    vector::Vector,
+    vector::{Vec2D, Vec3D},
   },
 };
 
@@ -47,7 +47,6 @@ fn fmt_function_evaluation_err(
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum TypeErrorReason {
-  IncompatibleTypes,
   IncompatibleTypeOp(Operation),
   InvalidCast(ObjectKind),
 }
@@ -59,12 +58,6 @@ fn fmt_type_error(
   f: &mut fmt::Formatter,
 ) -> fmt::Result {
   match reason {
-    TypeErrorReason::IncompatibleTypes => write!(
-      f,
-      "type {} is completley incompatible with {} (no possible operations)",
-      obj1.stringify_type(),
-      obj2.stringify_type()
-    ),
     TypeErrorReason::IncompatibleTypeOp(operation) => write!(
       f,
       "cannot preform operation \'{}\' between {} and {}",
@@ -113,7 +106,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
         Operation::Mul => evaluate(left, deg_mode)?.mul(evaluate(right, deg_mode)?)?,
         Operation::Div => evaluate(left, deg_mode)?.div(evaluate(right, deg_mode)?)?,
         Operation::Exp => evaluate(left, deg_mode)?.powf(evaluate(right, deg_mode)?)?,
-        Operation::Mod => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?)?,
+        Operation::Rem => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?)?,
         _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
 
@@ -148,8 +141,9 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
 fn factorial(obj: Object) -> Result<Object, EvaluationErrorRepr> {
   match obj {
     Object::Null => todo!(),
-    Object::Vector(vector) => Ok(factorial_vec(&vector)?.into()),
     Object::Number(num) => Ok(factorial_f64(num)?.into()),
+    Object::Vec2D(ref v) => Ok(factorial_vec2d(v)?.into()),
+    Object::Vec3D(ref v) => Ok(factorial_vec3d(v)?.into()),
   }
 }
 
@@ -177,20 +171,17 @@ fn factorial_f64(num: f64) -> Result<f64, EvaluationErrorRepr> {
   return Ok(res);
 }
 
-fn factorial_vec(vec: &Vector) -> Result<Vector, EvaluationErrorRepr> {
-  match vec {
-    Vector::Vec2D { x: x1, y: y1 } => Ok(Vector::Vec2D {
-      x: factorial_f64(*x1)?,
-      y: factorial_f64(*y1)?,
-    }),
-    Vector::Vec3D {
-      x: x1,
-      y: y1,
-      z: z1,
-    } => Ok(Vector::Vec3D {
-      x: factorial_f64(*x1)?,
-      y: factorial_f64(*y1)?,
-      z: factorial_f64(*z1)?,
-    }),
-  }
+fn factorial_vec2d(vec: &Vec2D) -> Result<Vec2D, EvaluationErrorRepr> {
+  Ok(Vec2D {
+    x: factorial_f64(vec.x)?,
+    y: factorial_f64(vec.y)?,
+  })
+}
+
+fn factorial_vec3d(vec: &Vec3D) -> Result<Vec3D, EvaluationErrorRepr> {
+  Ok(Vec3D {
+    x: factorial_f64(vec.x)?,
+    y: factorial_f64(vec.y)?,
+    z: factorial_f64(vec.z)?,
+  })
 }
