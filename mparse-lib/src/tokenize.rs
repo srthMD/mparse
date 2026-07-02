@@ -119,6 +119,7 @@ impl Display for Tokens {
           continue;
         }
         Token::Comma => write!(f, ","),
+        Token::Field(s) => write!(f, "{}", s),
       };
     }
 
@@ -127,7 +128,7 @@ impl Display for Tokens {
 }
 
 /// Enum describing all the possible tokens the tokenizer can interpret.
-#[derive(Debug, PartialEq, Clone, Copy, PartialOrd)]
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum Token {
   /// Any primitive number, represented as a float.
   Number(f64),
@@ -145,6 +146,8 @@ pub enum Token {
   CloseBracket,
   /// Self explanatory
   Comma,
+  /// Found after the dot operator to indicate indexing of an object.
+  Field(String),
   /// Internally used when the end of the token sequence is reached.
   Eof,
 }
@@ -175,11 +178,13 @@ pub enum TokenizeErrorType {
   /// take bases.
   #[error("function {0} does not support bases")]
   FunctionDoesNotSupportBases(FunctionType),
-
   /// Thrown when trying to use the rand function without the rand
   /// feature enabled.
   #[error("found rand function but mparse was not compiled with the rand feature enabled")]
   RandNotSupported,
+  /// Thrown when using the dot operator for indexing an object but not providing a name after.
+  #[error("found dot operator but no field name to use for indexing")]
+  BlankIndex,
 }
 
 /// Encapsulating struct for tokenization errors so that we can
@@ -472,6 +477,22 @@ fn tokenize_part(
       }
 
       _ if let Some(op) = Operation::from_char(chr) => {
+        if op == Operation::Dot {
+          if chars.len() <= idx + 1 {
+            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+          }
+
+          let (word, end_word_idx) = util::seek_word(chars, idx + 1);
+          if word.is_empty() {
+            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+          }
+
+          tokens.push(Token::Operator(op));
+          tokens.push(Token::Field(word.to_lowercase()));
+          idx = end_word_idx;
+          continue;
+        }
+
         tokens.push(Token::Operator(op));
         idx += 1;
         continue;

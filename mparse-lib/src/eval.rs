@@ -30,6 +30,10 @@ pub enum EvaluationErrorRepr {
     obj2: Object,
     reason: TypeErrorReason,
   },
+  #[error("no such field \"{field}\" in {kind}")]
+  InvalidField { kind: ObjectKind, field: String },
+  #[error("attempt to index type {0} that has no fields")]
+  NoFields(ObjectKind),
 }
 
 fn fmt_function_evaluation_err(
@@ -87,6 +91,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
     Expression::Constant(constant) => {
       final_result.checked_add_assign(constant.get_value().into())?
     }
+    Expression::Field(_) => todo!(),
 
     Expression::Unary { op, expr } => {
       let res = match op {
@@ -107,6 +112,16 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
         Operation::Div => evaluate(left, deg_mode)?.div(evaluate(right, deg_mode)?)?,
         Operation::Exp => evaluate(left, deg_mode)?.powf(evaluate(right, deg_mode)?)?,
         Operation::Rem => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?)?,
+        Operation::Dot => {
+          let field = match **right {
+            Expression::Field(ref s) => s.clone(),
+            _ => todo!(),
+          };
+
+          let obj_left = evaluate(left, deg_mode)?;
+          let val = obj_left.access_field(field)?;
+          val
+        }
         _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
 

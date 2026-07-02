@@ -4,6 +4,11 @@ use std::{
   ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
+use crate::{
+  eval::EvaluationErrorRepr,
+  types::{field::FieldAccess, object::ObjectKind},
+};
+
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub struct Vec2D {
   pub x: f64,
@@ -97,6 +102,22 @@ impl Vec2D {
   }
 }
 
+impl FieldAccess for Vec2D {
+  fn access_field(
+    &self,
+    field_name: String,
+  ) -> Result<super::object::Object, crate::eval::EvaluationErrorRepr> {
+    match field_name.as_str() {
+      "x" => Ok(self.x.into()),
+      "y" => Ok(self.y.into()),
+      _ => Err(EvaluationErrorRepr::InvalidField {
+        kind: ObjectKind::Vec2D,
+        field: field_name,
+      }),
+    }
+  }
+}
+
 impl Vec3D {
   pub(crate) fn magnitude(&self) -> f64 {
     (self.x.powi(2) + self.x.powi(2) + self.z.powi(2)).sqrt()
@@ -171,6 +192,23 @@ impl Vec3D {
       },
       f64::powf,
     )
+  }
+}
+
+impl FieldAccess for Vec3D {
+  fn access_field(
+    &self,
+    field_name: String,
+  ) -> Result<super::object::Object, crate::eval::EvaluationErrorRepr> {
+    match field_name.as_str() {
+      "x" => Ok(self.x.into()),
+      "y" => Ok(self.y.into()),
+      "z" => Ok(self.z.into()),
+      _ => Err(EvaluationErrorRepr::InvalidField {
+        kind: ObjectKind::Vec3D,
+        field: field_name,
+      }),
+    }
   }
 }
 

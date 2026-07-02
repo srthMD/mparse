@@ -5,6 +5,7 @@ use crate::{
   },
   operators::Operation,
   types::{
+    field::FieldAccess,
     object::Object::Null,
     vector::{Vec2D, Vec3D},
   },
@@ -110,6 +111,14 @@ obj_ops_impl! {Add Sub Mul Div Rem}
 obj_assign_ops_impl! {Add Sub Mul Div Rem}
 
 impl Object {
+  pub(crate) fn access_field(&self, field: String) -> Result<Self, EvaluationErrorRepr> {
+    match self {
+      Object::Vec2D(vec2_d) => vec2_d.access_field(field),
+      Object::Vec3D(vec3_d) => vec3_d.access_field(field),
+      _ => Err(EvaluationErrorRepr::NoFields(self.kind())),
+    }
+  }
+
   pub(crate) fn powf(&self, exponent: Object) -> Result<Self, EvaluationErrorRepr> {
     match (self, exponent) {
       (Object::Number(n), Object::Number(exponent)) => Ok(n.powf(exponent).into()),

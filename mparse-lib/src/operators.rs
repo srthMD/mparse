@@ -2,8 +2,6 @@
 
 use std::fmt::Display;
 
-use crate::functions::FunctionType;
-
 /// Enum representation of a single character operator
 /// like '+'.
 #[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord)]
@@ -15,9 +13,7 @@ pub enum Operation {
   Exp,
   Rem,
   Fac,
-  /// Not a real operator, used interally for the type checking error reporting. 
-  /// Paranormal events will occur if you construct it.
-  Func(FunctionType),
+  Dot,
 }
 
 impl Operation {
@@ -30,7 +26,7 @@ impl Operation {
       Self::Exp => "^",
       Self::Rem => "%",
       Self::Fac => "!",
-      Self::Func(_) => unreachable!(),
+      Self::Dot => ".",
     }
   }
 
@@ -46,6 +42,7 @@ impl Operation {
       '^' => Some(Operation::Exp),
       '%' => Some(Operation::Rem),
       '!' => Some(Operation::Fac),
+      '.' => Some(Operation::Dot),
       _ => None,
     }
   }
@@ -59,6 +56,7 @@ impl Operation {
       Self::Add | Self::Sub => Some((1, 2)),
       Self::Mul | Self::Div | Self::Rem => Some((5, 6)),
       Self::Exp => Some((10, 11)),
+      Self::Dot => Some((u8::MAX-1, u8::MAX)),
       _ => None,
     }
   }
