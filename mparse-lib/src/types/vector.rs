@@ -110,6 +110,8 @@ impl FieldAccess for Vec2D {
     match field_name.as_str() {
       "x" => Ok(self.x.into()),
       "y" => Ok(self.y.into()),
+      "magnitude" => Ok(self.magnitude().into()),
+      "unit" => Ok(self.unit().into()),
       _ => Err(EvaluationErrorRepr::InvalidField {
         kind: ObjectKind::Vec2D,
         field: field_name,
@@ -204,6 +206,8 @@ impl FieldAccess for Vec3D {
       "x" => Ok(self.x.into()),
       "y" => Ok(self.y.into()),
       "z" => Ok(self.z.into()),
+      "magnitude" => Ok(self.magnitude().into()),
+      "unit" => Ok(self.unit().into()),
       _ => Err(EvaluationErrorRepr::InvalidField {
         kind: ObjectKind::Vec3D,
         field: field_name,
