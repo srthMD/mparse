@@ -1,13 +1,13 @@
 ## Constants
 
-Constants can be interpreted from plaintext (like "pi" or "e"). See [constants.rs](./src/constants.rs) for all of the constants.
+Constants can be interpreted from plaintext (like "pi" or "e"). See [constants.rs](./mparse-lib/src/constants.rs) for all of the constants.
 
 ## Functions
 
 MParse includes many different common mathematical functions for the user to call, like trig functions.
 Specifically for trigonometric functions (and angle), you can pass the -d or --deg flag to evaluate trig functions in degree mode. All functions must also have opening and closing brackets.
 
-See the FunctionType enum in [functions.rs](./src/functions.rs) for all of the functions built into MParse.
+See the FunctionType enum in [functions.rs](./mparse-lib/src/functions.rs) for all of the functions built into MParse.
 
 #### RNG Function
 
@@ -32,9 +32,11 @@ mparse "root_4(16)"
 ```
 
 ## Objects and Typechecking
-MParse also has the ability to work on library-defined structs (Vec2D for example), along with floats, where all non-numerical objects are constructed via functions. MParse will also check all operations and function calls beforehand to check for type compatibility, i.e. something like "vec2(10, 5) * vec3(12, 8, -2)" will throw a type error since you cannot multiply a 2D vector with a 3D one.
+
+MParse also has the ability to work on library-defined structs (Vec2D for example), along with floats, where all non-numerical objects are constructed via functions. MParse will also check all operations and function calls beforehand to check for type compatibility, i.e. something like "vec2(10, 5) \* vec3(12, 8, -2)" will throw a type error since you cannot multiply a 2D vector with a 3D one.
 
 ### Fields
+
 Some objects have fields that you can index with the dot ('.') operator, just like many other programming languages.
 
 ```bash
@@ -46,6 +48,7 @@ You can also use indexing as a shorthand for some function calls.
 ```bash
   mparse "vec3(-2, 5, 2).magnitude"
 ```
+
 Indexing an object with no fields (like a number) will throw an error, and indexing an object with an invalid field will also throw an error.
 
 ## Implied Multiplication
