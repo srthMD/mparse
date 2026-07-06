@@ -92,35 +92,7 @@ impl Tokens {
 impl Display for Tokens {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     for token in self.tokens.iter() {
-      #[allow(unused_must_use)]
-      match token {
-        Token::Number(num) => write!(f, "{}", num.to_string()),
-        Token::Const(constant) => write!(f, "{}", constant.as_str()),
-        Token::Operator(operation) => write!(f, "{}", operation.as_str()),
-        Token::Function(function) => {
-          if function.has_base() {
-            write!(
-              f,
-              "{}_{}",
-              function.get_function_type().as_str(),
-              function.get_base_unwrap(),
-            )
-          } else {
-            write!(f, "{}", function.get_function_type().as_str(),)
-          }
-        }
-        Token::OpenBracket => {
-          write!(f, "(")
-        }
-        Token::CloseBracket => {
-          write!(f, ")")
-        }
-        Token::Eof => {
-          continue;
-        }
-        Token::Comma => write!(f, ","),
-        Token::Field(s) => write!(f, "{}", s),
-      };
+      let _ = write!(f, "{}", token);
     }
 
     Ok(())
@@ -140,9 +112,9 @@ pub enum Token {
   /// support bases, like the root_n() function which will
   /// take the n'th root of a number.
   Function(Function),
-  /// The '(' or '[' characters
+  /// The '(' character.
   OpenBracket,
-  /// The ')' or ']' characters
+  /// The ')' character.
   CloseBracket,
   /// Self explanatory
   Comma,
@@ -150,6 +122,37 @@ pub enum Token {
   Field(String),
   /// Internally used when the end of the token sequence is reached.
   Eof,
+}
+
+impl Display for Token {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Token::Number(num) => write!(f, "{}", num.to_string()),
+      Token::Const(constant) => write!(f, "{}", constant.as_str()),
+      Token::Operator(operation) => write!(f, "{}", operation.as_str()),
+      Token::Function(function) => {
+        if function.has_base() {
+          write!(
+            f,
+            "{}_{}",
+            function.get_function_type().as_str(),
+            function.get_base_unwrap(),
+          )
+        } else {
+          write!(f, "{}", function.get_function_type().as_str(),)
+        }
+      }
+      Token::OpenBracket => {
+        write!(f, "(")
+      }
+      Token::CloseBracket => {
+        write!(f, ")")
+      }
+      Token::Eof => Ok(()),
+      Token::Comma => write!(f, ","),
+      Token::Field(s) => write!(f, "{}", s),
+    }
+  }
 }
 
 /// All the possible errors that can happen during tokenization.
@@ -443,8 +446,8 @@ mod util {
 
   pub fn char_is_bracket(chr: char) -> Option<BracketType> {
     match chr {
-      '(' | '[' => Some(BracketType::Opening),
-      ')' | ']' => Some(BracketType::Closing),
+      '(' => Some(BracketType::Opening),
+      ')' => Some(BracketType::Closing),
       _ => None,
     }
   }
