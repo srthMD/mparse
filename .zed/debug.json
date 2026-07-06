@@ -3,10 +3,11 @@
     "label": "Debug",
     "adapter": "CodeLLDB",
     "request": "launch",
-    "program": "$ZED_WORKTREE_ROOT/target/debug/mparse",
+    "program": "$ZED_WORKTREE_ROOT/target/debug/mparse-bin",
     "build": {
       "command": "cargo",
-      "args": ["build"]
-    }
+      "args": ["build", "--bin", "mparse-bin"]
+    },
+    "terminal": "integrated"
   }
 ]

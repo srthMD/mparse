@@ -11,8 +11,9 @@ pub enum Operation {
   Mul,
   Div,
   Exp,
-  Mod,
+  Rem,
   Fac,
+  Dot,
 }
 
 impl Operation {
@@ -23,8 +24,9 @@ impl Operation {
       Self::Mul => "*",
       Self::Div => "/",
       Self::Exp => "^",
-      Self::Mod => "%",
+      Self::Rem => "%",
       Self::Fac => "!",
+      Self::Dot => ".",
     }
   }
 
@@ -38,8 +40,9 @@ impl Operation {
       '*' | '×' => Some(Operation::Mul),
       '/' | '÷' => Some(Operation::Div),
       '^' => Some(Operation::Exp),
-      '%' => Some(Operation::Mod),
+      '%' => Some(Operation::Rem),
       '!' => Some(Operation::Fac),
+      '.' => Some(Operation::Dot),
       _ => None,
     }
   }
@@ -51,8 +54,9 @@ impl Operation {
   pub fn get_infix_bp(&self) -> Option<(u8, u8)> {
     match self {
       Self::Add | Self::Sub => Some((1, 2)),
-      Self::Mul | Self::Div | Self::Mod => Some((5, 6)),
+      Self::Mul | Self::Div | Self::Rem => Some((5, 6)),
       Self::Exp => Some((10, 11)),
+      Self::Dot => Some((u8::MAX-1, u8::MAX)),
       _ => None,
     }
   }

@@ -35,6 +35,7 @@ impl ParseErrorRepr {
 pub enum Expression {
   Number(f64),
   Constant(Constant),
+  Field(String),
 
   Unary {
     op: Operation,
@@ -64,6 +65,7 @@ impl Display for Expression {
     match self {
       Expression::Number(n) => write!(f, "{}", n),
       Expression::Constant(constant) => write!(f, "{}", constant.as_str()),
+      Expression::Field(s) => write!(f, "{}", s),
       Expression::Unary { op, expr } => write!(f, "{}({})", op.as_str(), expr),
       Expression::Binary { op, left, right } => write!(f, "({} {} {})", left, op.as_str(), right),
       Expression::Function { func, exprs } => {
@@ -98,6 +100,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
   let mut lhs = match tok {
     Token::Number(n) => Expression::Number(n),
     Token::Const(constant) => Expression::Constant(constant),
+    Token::Field(ref s) => Expression::Field(s.clone()),
     Token::Operator(op) => match op {
       Operation::Sub => {
         let prefix_bp = op.get_prefix_bp().expect("unreachable");
@@ -163,7 +166,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
         Operation::Mul
       }
 
-      Token::Eof | Token::CloseBracket | Token::Comma => {
+      Token::Eof | Token::CloseBracket | Token::Comma | Token::Field(_) => {
         break;
       }
 

@@ -1,7 +1,10 @@
 use thiserror::Error;
 
 use crate::{
-  ast::{Expression, ParseErrorRepr}, eval::EvaluationErrorRepr, tokenize::{TokenizeErrorRepr, Tokens}
+  ast::{Expression, ParseErrorRepr},
+  eval::EvaluationErrorRepr,
+  tokenize::{TokenizeErrorRepr, Tokens},
+  types::object::Object,
 };
 
 pub mod ast;
@@ -10,6 +13,7 @@ pub mod eval;
 pub mod functions;
 pub mod operators;
 pub mod tokenize;
+pub mod types;
 
 #[derive(Debug, PartialEq, PartialOrd, Error)]
 pub enum Error {
@@ -18,13 +22,13 @@ pub enum Error {
   TokenizeError(#[from] TokenizeErrorRepr),
   #[error("error during expression parsing: {0}")]
   ParseError(#[from] ParseErrorRepr),
-  #[error("error during evaluation: {0}")]
+  #[error(transparent)]
   EvaluationError(#[from] EvaluationErrorRepr),
 }
 
 /// All in one function that will do tokenization, parsing, and evaluation
 /// from the input string.
-pub fn parse(input_str: &str, deg_mode: bool) -> Result<f64, crate::Error> {
+pub fn parse(input_str: &str, deg_mode: bool) -> Result<Object, crate::Error> {
   let tokens = match Tokens::new(input_str) {
     Ok(it) => it,
     Err(err) => return Err(Error::TokenizeError(err)),

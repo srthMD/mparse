@@ -92,34 +92,7 @@ impl Tokens {
 impl Display for Tokens {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     for token in self.tokens.iter() {
-      #[allow(unused_must_use)]
-      match token {
-        Token::Number(num) => write!(f, "{}", num.to_string()),
-        Token::Const(constant) => write!(f, "{}", constant.as_str()),
-        Token::Operator(operation) => write!(f, "{}", operation.as_str()),
-        Token::Function(function) => {
-          if function.has_base() {
-            write!(
-              f,
-              "{}_{}",
-              function.get_function_type().as_str(),
-              function.get_base_unwrap(),
-            )
-          } else {
-            write!(f, "{}", function.get_function_type().as_str(),)
-          }
-        }
-        Token::OpenBracket => {
-          write!(f, "(")
-        }
-        Token::CloseBracket => {
-          write!(f, ")")
-        }
-        Token::Eof => {
-          continue;
-        }
-        Token::Comma => write!(f, ","),
-      };
+      let _ = write!(f, "{}", token);
     }
 
     Ok(())
@@ -127,7 +100,7 @@ impl Display for Tokens {
 }
 
 /// Enum describing all the possible tokens the tokenizer can interpret.
-#[derive(Debug, PartialEq, Clone, Copy, PartialOrd)]
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum Token {
   /// Any primitive number, represented as a float.
   Number(f64),
@@ -139,14 +112,47 @@ pub enum Token {
   /// support bases, like the root_n() function which will
   /// take the n'th root of a number.
   Function(Function),
-  /// The '(' or '[' characters
+  /// The '(' character.
   OpenBracket,
-  /// The ')' or ']' characters
+  /// The ')' character.
   CloseBracket,
   /// Self explanatory
   Comma,
+  /// Found after the dot operator to indicate indexing of an object.
+  Field(String),
   /// Internally used when the end of the token sequence is reached.
   Eof,
+}
+
+impl Display for Token {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Token::Number(num) => write!(f, "{}", num.to_string()),
+      Token::Const(constant) => write!(f, "{}", constant.as_str()),
+      Token::Operator(operation) => write!(f, "{}", operation.as_str()),
+      Token::Function(function) => {
+        if function.has_base() {
+          write!(
+            f,
+            "{}_{}",
+            function.get_function_type().as_str(),
+            function.get_base_unwrap(),
+          )
+        } else {
+          write!(f, "{}", function.get_function_type().as_str(),)
+        }
+      }
+      Token::OpenBracket => {
+        write!(f, "(")
+      }
+      Token::CloseBracket => {
+        write!(f, ")")
+      }
+      Token::Eof => Ok(()),
+      Token::Comma => write!(f, ","),
+      Token::Field(s) => write!(f, "{}", s),
+    }
+  }
 }
 
 /// All the possible errors that can happen during tokenization.
@@ -175,11 +181,13 @@ pub enum TokenizeErrorType {
   /// take bases.
   #[error("function {0} does not support bases")]
   FunctionDoesNotSupportBases(FunctionType),
-
   /// Thrown when trying to use the rand function without the rand
   /// feature enabled.
   #[error("found rand function but mparse was not compiled with the rand feature enabled")]
   RandNotSupported,
+  /// Thrown when using the dot operator for indexing an object but not providing a name after.
+  #[error("found dot operator but no field name to use for indexing")]
+  BlankIndex,
 }
 
 /// Encapsulating struct for tokenization errors so that we can
@@ -273,7 +281,7 @@ mod util {
       }
 
       let chr = chars[current_idx];
-      if chr.is_ascii_alphabetic() {
+      if chr.is_ascii_alphanumeric() {
         s.push(chr as char);
       } else {
         break;
@@ -438,8 +446,8 @@ mod util {
 
   pub fn char_is_bracket(chr: char) -> Option<BracketType> {
     match chr {
-      '(' | '[' => Some(BracketType::Opening),
-      ')' | ']' => Some(BracketType::Closing),
+      '(' => Some(BracketType::Opening),
+      ')' => Some(BracketType::Closing),
       _ => None,
     }
   }
@@ -472,6 +480,22 @@ fn tokenize_part(
       }
 
       _ if let Some(op) = Operation::from_char(chr) => {
+        if op == Operation::Dot {
+          if chars.len() <= idx + 1 {
+            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+          }
+
+          let (word, end_word_idx) = util::seek_word(chars, idx + 1);
+          if word.is_empty() {
+            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+          }
+
+          tokens.push(Token::Operator(op));
+          tokens.push(Token::Field(word.to_lowercase()));
+          idx = end_word_idx;
+          continue;
+        }
+
         tokens.push(Token::Operator(op));
         idx += 1;
         continue;
