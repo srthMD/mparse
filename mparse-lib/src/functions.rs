@@ -102,7 +102,7 @@ static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|| {
   std_wrapper_alias! {map, Rad, to_radians}
 
   builtin_impl! {map,
-    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle
+    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout
   }
   map
 });
@@ -208,6 +208,8 @@ pub enum FunctionType {
   Distance,
   Cross,
   SignedAngle,
+  Out,
+  Binout,
 }
 
 impl FunctionType {
@@ -254,6 +256,8 @@ impl FunctionType {
       "dist" | "distance" => Some(Self::Distance),
       "angle" => Some(Self::Angle),
       "sangle" | "signedangle" | "signed_angle" => Some(Self::SignedAngle),
+      "out" | "print" => Some(Self::Out),
+      "binout" | "binprint" | "printbin" => Some(Self::Binout),
       _ => None,
     }
   }
@@ -907,6 +911,25 @@ mod impls {
   }
   decl_arg_types! {cross, anyof: (Vec2D, Vec3D), anyof: (Vec2D, Vec3D)}
   decl_returns! {cross, anyof: Vec2D, Vec3D}
+
+  pub fn out(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    println!("{}", args[0]);
+    Ok(args[0])
+  }
+  decl_arg_types! {out, Any}
+  decl_returns! {out, Any}
+
+  pub fn binout(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    match args[0] {
+      Object::Number(n) => {
+        println!("{:08b}", n as i64);
+        Ok(args[0])
+      }
+      _ => panic!("argument mismatch"),
+    }
+  }
+  decl_arg_types! {binout, Number}
+  decl_returns! {binout, Number}
 }
 
 mod helpers {
