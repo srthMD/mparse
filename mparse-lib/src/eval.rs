@@ -155,10 +155,10 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
 
 fn factorial(obj: Object) -> Result<Object, EvaluationErrorRepr> {
   match obj {
-    Object::Null => todo!(),
     Object::Number(num) => Ok(factorial_f64(num)?.into()),
     Object::Vec2D(ref v) => Ok(factorial_vec2d(v)?.into()),
     Object::Vec3D(ref v) => Ok(factorial_vec3d(v)?.into()),
+    _ => panic!("argument mismatch"),
   }
 }
 

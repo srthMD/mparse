@@ -20,6 +20,7 @@ use std::{
 pub enum Object {
   Null,
   Number(f64),
+  Bool(bool),
   Vec2D(Vec2D),
   Vec3D(Vec3D),
 }
@@ -30,6 +31,8 @@ pub enum ObjectKind {
   Number,
   Vec2D,
   Vec3D,
+  Bool,
+  Any,
   AnyOf(&'static [ObjectKind]),
 }
 
@@ -40,6 +43,7 @@ impl Display for ObjectKind {
       ObjectKind::Number => write!(f, "number"),
       ObjectKind::Vec2D => write!(f, "vec2d"),
       ObjectKind::Vec3D => write!(f, "vec3d"),
+      ObjectKind::Any => write!(f, "any"),
       ObjectKind::AnyOf(object_kinds) => {
         for i in 0..object_kinds.len() {
           #[allow(unused_must_use)]
@@ -52,6 +56,7 @@ impl Display for ObjectKind {
 
         Ok(())
       }
+      ObjectKind::Bool => write!(f, "bool"),
     }
   }
 }
@@ -143,6 +148,7 @@ impl Object {
       Object::Number(_) => ObjectKind::Number,
       Object::Vec2D(_) => ObjectKind::Vec2D,
       Object::Vec3D(_) => ObjectKind::Vec3D,
+      Object::Bool(_) => ObjectKind::Bool,
     }
   }
 }
@@ -156,6 +162,7 @@ impl Neg for Object {
       Object::Vec2D(vector) => (-vector).into(),
       Object::Vec3D(vector) => (-vector).into(),
       Object::Null => self,
+      Object::Bool(b) => (!b).into(),
     }
   }
 }
@@ -167,6 +174,7 @@ impl Display for Object {
       Object::Number(n) => write!(f, "{}", n),
       Object::Vec2D(vector) => write!(f, "{}", vector),
       Object::Vec3D(vector) => write!(f, "{}", vector),
+      Object::Bool(b) => write!(f, "{}", b),
     }
   }
 }
@@ -231,5 +239,11 @@ impl From<Vec2D> for Object {
 impl From<Vec3D> for Object {
   fn from(value: Vec3D) -> Self {
     Object::Vec3D(value)
+  }
+}
+
+impl From<bool> for Object {
+  fn from(value: bool) -> Self {
+    Object::Bool(value)
   }
 }

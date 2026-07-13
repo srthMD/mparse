@@ -405,6 +405,10 @@ impl Function {
             }
           }
 
+          ObjectKind::Any => {
+            continue;
+          }
+
           _ => {
             if user_arg.kind() != *builtin_arg {
               return Err(FunctionEvaluationError::InvalidArgument {
@@ -704,10 +708,10 @@ mod impls {
 
   pub fn floor(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
-      Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.floor().into()),
       Object::Vec2D(v) => Ok(v.floor().into()),
       Object::Vec3D(v) => Ok(v.floor().into()),
+      _ => panic!("argument mismatch"),
     }
   }
   decl_arg_types! {floor, anyof: (Number, Vec2D, Vec3D)}
@@ -715,10 +719,10 @@ mod impls {
 
   pub fn ceil(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
-      Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.ceil().into()),
       Object::Vec2D(v) => Ok(v.ceil().into()),
       Object::Vec3D(v) => Ok(v.ceil().into()),
+      _ => panic!("argument mismatch"),
     }
   }
   decl_arg_types! {ceil, anyof: (Number, Vec2D, Vec3D)}
@@ -726,10 +730,10 @@ mod impls {
 
   pub fn abs(_: &Function, args: &[Object]) -> BuiltinFnOutput {
     match args[0] {
-      Object::Null => unreachable!(),
       Object::Number(n) => Ok(n.abs().into()),
       Object::Vec2D(v) => Ok(v.abs().into()),
       Object::Vec3D(v) => Ok(v.abs().into()),
+      _ => panic!("argument mismatch"),
     }
   }
   decl_arg_types! {abs, anyof: (Number, Vec2D, Vec3D)}

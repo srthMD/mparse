@@ -40,10 +40,10 @@ struct Args {
 
 fn apply_tolerance(obj: Object) -> Object {
   match obj {
-    Object::Null => obj,
     Object::Number(n) => apply_tolerance_f64(n).into(),
     Object::Vec2D(vec2_d) => apply_tolerance_vec2d(vec2_d).into(),
     Object::Vec3D(vec3_d) => apply_tolerance_vec3d(vec3_d).into(),
+    _ => obj,
   }
 }
 
