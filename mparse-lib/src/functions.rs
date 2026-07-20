@@ -84,7 +84,7 @@ macro_rules! builtin_impl {
   };
 }
 
-static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|| {
+pub static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|| {
   let mut map = HashMap::<FunctionType, Builtin>::new();
   std_wrapper_builtin! { map,
     Sqrt Cbrt Sin Cos Tan Sinh Cosh Tanh Ln
@@ -102,7 +102,7 @@ static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|| {
   std_wrapper_alias! {map, Rad, to_radians}
 
   builtin_impl! {map,
-    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout
+    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout ToNum Xor
   }
   map
 });
@@ -146,7 +146,7 @@ pub enum FunctionEvaluationError {
 type BuiltinFnOutput = Result<Object, EvaluationErrorRepr>;
 type BuiltinFn = fn(&Function, &[Object]) -> BuiltinFnOutput;
 
-struct Builtin {
+pub struct Builtin {
   func: BuiltinFn,
   arg_t: BuiltinArgs,
   /// Currently unused.
@@ -155,7 +155,7 @@ struct Builtin {
 }
 
 /// Describes the argument types that a function takes in.
-enum BuiltinArgs {
+pub enum BuiltinArgs {
   /// Varargs where all argument types have to match the discriminant provided.
   Varargs(ObjectKind),
   /// Explicit arguments where each nth type provided has to match the nth type provided in the enum.
@@ -210,6 +210,8 @@ pub enum FunctionType {
   SignedAngle,
   Out,
   Binout,
+  ToNum,
+  Xor,
 }
 
 impl FunctionType {
@@ -258,6 +260,7 @@ impl FunctionType {
       "sangle" | "signedangle" | "signed_angle" => Some(Self::SignedAngle),
       "out" | "print" => Some(Self::Out),
       "binout" | "binprint" | "printbin" => Some(Self::Binout),
+      "tonum" | "tonumber" => Some(Self::ToNum),
       _ => None,
     }
   }
@@ -934,6 +937,21 @@ mod impls {
   }
   decl_arg_types! {binout, Number}
   decl_returns! {binout, Number}
+
+  pub fn tonum(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    match args[0] {
+      Object::Bool(b) => Ok((b as i64).into()),
+      _ => panic!("argument mismatch"),
+    }
+  }
+  decl_arg_types! {tonum, Bool}
+  decl_returns! {tonum, Number}
+
+  pub fn xor(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    Ok((args[0] ^ args[1])?)
+  }
+  decl_arg_types! {xor, anyof: (Number, Bool), anyof: (Number, Bool)}
+  decl_returns! {xor, anyof: Number, Bool}
 }
 
 mod helpers {

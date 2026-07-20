@@ -97,6 +97,8 @@ macro_rules! obj_bit_ops_impl {
              match (self, other) {
                (Object::Number(lhs), Object::Number(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
                (Object::Bool(lhs), Object::Bool(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
+               (Object::Number(lhs), Object::Bool(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
+               (Object::Bool(lhs), Object::Number(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
                (Object::Null, _) => Ok(other.clone()),
                (_, Object::Null) => Ok(self.clone()),
                _ => {
