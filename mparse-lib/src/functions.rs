@@ -102,7 +102,8 @@ pub static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|
   std_wrapper_alias! {map, Rad, to_radians}
 
   builtin_impl! {map,
-    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout ToNum Xor
+    Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout
+    ToNum Xor Midpoint Clamp Min Max StdDev
   }
   map
 });
@@ -212,6 +213,11 @@ pub enum FunctionType {
   Binout,
   ToNum,
   Xor,
+  Min,
+  Max,
+  Clamp,
+  Midpoint,
+  StdDev,
 }
 
 impl FunctionType {
@@ -261,6 +267,11 @@ impl FunctionType {
       "out" | "print" => Some(Self::Out),
       "binout" | "binprint" | "printbin" => Some(Self::Binout),
       "tonum" | "tonumber" => Some(Self::ToNum),
+      "min" => Some(Self::Min),
+      "max" => Some(Self::Max),
+      "midpoint" => Some(Self::Midpoint),
+      "clamp" => Some(Self::Clamp),
+      "stddev" => Some(Self::StdDev),
       _ => None,
     }
   }
@@ -952,6 +963,68 @@ mod impls {
   }
   decl_arg_types! {xor, anyof: (Number, Bool), anyof: (Number, Bool)}
   decl_returns! {xor, anyof: Number, Bool}
+
+  pub fn midpoint(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let num1: f64 = args[0].try_into()?;
+    let num2: f64 = args[1].try_into()?;
+
+    Ok((num1.midpoint(num2)).into())
+  }
+  decl_arg_types! {midpoint, Number Number}
+  decl_returns! {midpoint, Number}
+
+  pub fn min(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let mut min = f64::MAX;
+    for obj in args {
+      let as_num: f64 = (*obj).try_into()?;
+      if as_num < min {
+        min = as_num;
+      }
+    }
+
+    Ok(min.into())
+  }
+  decl_arg_types! {min, vararg: Number}
+  decl_returns! {min, Number}
+
+  pub fn max(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let mut max = f64::MIN;
+    for obj in args {
+      let as_num: f64 = (*obj).try_into()?;
+      if as_num > max {
+        max = as_num;
+      }
+    }
+
+    Ok(max.into())
+  }
+  decl_arg_types! {max, vararg: Number}
+  decl_returns! {max, Number}
+
+  pub fn clamp(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let num1: f64 = args[0].try_into()?;
+    let min: f64 = args[1].try_into()?;
+    let max: f64 = args[2].try_into()?;
+
+    Ok(f64::max(num1, min).min(max).into())
+  }
+  decl_arg_types! {clamp, Number Number Number}
+  decl_returns! {clamp, Number}
+
+  pub fn stddev(self_func: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let mean: f64 = mean(self_func, args)?.try_into()?;
+    let len = args.len();
+    let mut sum = 0f64;
+
+    for obj in args {
+      let as_num: f64 = (*obj).try_into()?;
+      sum += (as_num - mean).powi(2);
+    }
+
+    Ok(f64::sqrt(sum / len as f64).into())
+  }
+  decl_arg_types! {stddev, vararg: Number}
+  decl_returns! {stddev, Number}
 }
 
 mod helpers {
