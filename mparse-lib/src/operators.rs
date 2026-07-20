@@ -2,8 +2,6 @@
 
 use std::fmt::Display;
 
-/// Enum representation of a single character operator
-/// like '+'.
 #[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord)]
 pub enum Operation {
   Add,
@@ -14,6 +12,10 @@ pub enum Operation {
   Rem,
   Fac,
   Dot,
+  Eq,
+  Neq,
+  And,
+  Or,
 }
 
 impl Operation {
@@ -27,13 +29,17 @@ impl Operation {
       Self::Rem => "%",
       Self::Fac => "!",
       Self::Dot => ".",
+      Self::And => "&",
+      Self::Or => "|",
+      Self::Eq => "==",
+      Self::Neq => "!=",
     }
   }
 
-  /// Matches unicode characters (not graphemes) to their enum
-  /// representation. Mainly used in tokenization.
-  pub(crate) fn from_char(chr: char) -> Option<Self> {
-    match chr {
+  /// Matches the single character operators to their enum representation.
+  /// Mainly used in tokenization.
+  pub(crate) fn from_char(s: char) -> Option<Self> {
+    match s {
       '+' => Some(Operation::Add),
       // yo this is so 🤣🤣🤣🤣🤣🤣🤣🤣
       '-' | '–' | '—' | '‒' => Some(Operation::Sub),
@@ -43,6 +49,8 @@ impl Operation {
       '%' => Some(Operation::Rem),
       '!' => Some(Operation::Fac),
       '.' => Some(Operation::Dot),
+      '|' => Some(Operation::Or),
+      '&' => Some(Operation::And),
       _ => None,
     }
   }
@@ -53,10 +61,12 @@ impl Operation {
   /// precedence above other operators.
   pub fn get_infix_bp(&self) -> Option<(u8, u8)> {
     match self {
-      Self::Add | Self::Sub => Some((1, 2)),
+      Self::Eq | Self::Neq => Some((1, 2)),
+      Self::Add | Self::Sub => Some((3, 2)),
       Self::Mul | Self::Div | Self::Rem => Some((5, 6)),
       Self::Exp => Some((10, 11)),
-      Self::Dot => Some((u8::MAX-1, u8::MAX)),
+      Self::And | Self::Or => Some((12, 13)),
+      Self::Dot => Some((u8::MAX - 1, u8::MAX)),
       _ => None,
     }
   }
@@ -65,7 +75,7 @@ impl Operation {
   /// as a prefix (unary) operator, returns None otherwise.
   pub fn get_prefix_bp(&self) -> Option<u8> {
     match self {
-      Self::Sub => Some(u8::MAX),
+      Self::Sub | Self::Fac => Some(u8::MAX),
       _ => None,
     }
   }

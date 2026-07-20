@@ -1,6 +1,6 @@
 use std::{
   fmt::{self},
-  ops::{Add, Div, Mul, Neg, Rem, Sub},
+  ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Not, Rem, Sub},
   vec,
 };
 
@@ -91,12 +91,21 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
     Expression::Constant(constant) => {
       final_result.checked_add_assign(constant.get_value().into())?
     }
+    Expression::Boolean(b) => final_result = Object::Bool(*b),
+    Expression::Null => final_result = Object::Null,
+    // unreachable?
     Expression::Field(_) => todo!(),
 
     Expression::Unary { op, expr } => {
       let res = match op {
         Operation::Sub => evaluate(expr, deg_mode)?.neg(),
-        Operation::Fac => factorial(evaluate(expr, deg_mode)?)?,
+        Operation::Fac => {
+          let obj = evaluate(expr, deg_mode)?;
+          match obj {
+            Object::Bool(b) => Object::Bool(!b),
+            _ => factorial(obj)?,
+          }
+        }
         _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
 
@@ -112,6 +121,14 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
         Operation::Div => evaluate(left, deg_mode)?.div(evaluate(right, deg_mode)?)?,
         Operation::Exp => evaluate(left, deg_mode)?.powf(evaluate(right, deg_mode)?)?,
         Operation::Rem => evaluate(left, deg_mode)?.rem(evaluate(right, deg_mode)?)?,
+        Operation::And => evaluate(left, deg_mode)?.bitand(evaluate(right, deg_mode)?)?,
+        Operation::Or => evaluate(left, deg_mode)?.bitor(evaluate(right, deg_mode)?)?,
+        Operation::Eq => evaluate(left, deg_mode)?
+          .eq(&evaluate(right, deg_mode)?)
+          .into(),
+        Operation::Neq => (evaluate(left, deg_mode)?.eq(&evaluate(right, deg_mode)?))
+          .not()
+          .into(),
         Operation::Dot => {
           let field = match **right {
             Expression::Field(ref s) => s.clone(),

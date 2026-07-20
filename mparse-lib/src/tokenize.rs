@@ -11,6 +11,7 @@ use crate::constants::Constant;
 use crate::functions::Function;
 use crate::functions::FunctionType;
 use crate::operators::Operation;
+use crate::tokenize::util::handle_operator;
 use crate::tokenize::util::seek_next_non_whitespace_char;
 
 use std::cell::Cell;
@@ -120,6 +121,10 @@ pub enum Token {
   Comma,
   /// Found after the dot operator to indicate indexing of an object.
   Field(String),
+  // The "true" or "false" literals.
+  Boolean(bool),
+  // The "null" literal
+  Null,
   /// Internally used when the end of the token sequence is reached.
   Eof,
 }
@@ -130,6 +135,8 @@ impl Display for Token {
       Token::Number(num) => write!(f, "{}", num.to_string()),
       Token::Const(constant) => write!(f, "{}", constant.as_str()),
       Token::Operator(operation) => write!(f, "{}", operation.as_str()),
+      Token::Boolean(b) => write!(f, "{}", b),
+      Token::Null => write!(f, "null"),
       Token::Function(function) => {
         if function.has_base() {
           write!(
@@ -188,6 +195,12 @@ pub enum TokenizeErrorType {
   /// Thrown when using the dot operator for indexing an object but not providing a name after.
   #[error("found dot operator but no field name to use for indexing")]
   BlankIndex,
+  /// Thrown when the tokenizer finds an operation in a place it does not expect it to be.
+  #[error("unexpected operator {0}")]
+  UnexpectedOperator(Operation),
+  /// Thrown when the tokenizer finds something like Eq but the input ends right after.
+  #[error("malformed infix operator found at end of input")]
+  MalformedOperator,
 }
 
 /// Encapsulating struct for tokenization errors so that we can
@@ -234,6 +247,7 @@ mod util {
 
   use crate::{
     functions::FunctionType,
+    operators::Operation,
     tokenize::{
       Constant, Token, TokenizeErrorRepr,
       TokenizeErrorType::{self},
@@ -451,6 +465,40 @@ mod util {
       _ => None,
     }
   }
+
+  pub fn handle_operator(
+    op: Operation,
+    idx: usize,
+    chars: &Vec<char>,
+    tokens: &mut Vec<Token>,
+  ) -> Result<usize, TokenizeErrorRepr> {
+    if op == Operation::Dot {
+      if chars.len() <= idx + 1 {
+        return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+      }
+
+      let (word, end_word_idx) = seek_word(chars, idx + 1);
+      if word.is_empty() {
+        return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+      }
+
+      tokens.push(Token::Operator(op));
+      tokens.push(Token::Field(word.to_lowercase()));
+      return Ok(end_word_idx);
+    }
+
+    if chars.len() <= idx + 1
+      && let Some(_) = op.get_infix_bp()
+    {
+      return Err(TokenizeErrorRepr::new(
+        TokenizeErrorType::UnexpectedOperator(op),
+        idx,
+      ));
+    }
+
+    tokens.push(Token::Operator(op));
+    return Ok(idx + 1);
+  }
 }
 
 /// The primary function for tokenization.
@@ -479,30 +527,66 @@ fn tokenize_part(
         }
       }
 
-      _ if let Some(op) = Operation::from_char(chr) => {
-        if op == Operation::Dot {
-          if chars.len() <= idx + 1 {
-            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
-          }
+      '!' | '=' => {
+        if let Some(next_chr) = chars.get(idx + 1) {
+          if *next_chr == '=' {
+            let op = match chr {
+              '!' => Operation::Neq,
+              '=' => Operation::Eq,
+              _ => unreachable!(),
+            };
 
-          let (word, end_word_idx) = util::seek_word(chars, idx + 1);
-          if word.is_empty() {
-            return Err(TokenizeErrorRepr::new(TokenizeErrorType::BlankIndex, idx));
+            tokens.push(Token::Operator(op));
+            idx += 2
+          } else {
+            if let Some(op) = Operation::from_char(chr) {
+              idx = handle_operator(op, idx, chars, &mut tokens)?;
+              continue;
+            } else {
+              return Err(TokenizeErrorRepr::new(
+                TokenizeErrorType::MalformedOperator,
+                idx,
+              ));
+            }
           }
-
-          tokens.push(Token::Operator(op));
-          tokens.push(Token::Field(word.to_lowercase()));
-          idx = end_word_idx;
-          continue;
+        } else {
+          match chr {
+            '=' => {
+              return Err(TokenizeErrorRepr::new(
+                TokenizeErrorType::MalformedOperator,
+                idx,
+              ));
+            }
+            '!' => {
+              tokens.push(Token::Operator(Operation::Fac));
+              idx += 1;
+              continue;
+            }
+            _ => unreachable!(),
+          }
         }
+      }
 
-        tokens.push(Token::Operator(op));
-        idx += 1;
+      _ if let Some(op) = Operation::from_char(chr) => {
+        idx = handle_operator(op, idx, chars, &mut tokens)?;
         continue;
       }
 
       _ if chr.is_alphabetic() => {
         let (word, end_word_idx) = util::seek_word(chars, idx);
+
+        let literal_opt: Option<Token> = match word.as_str() {
+          "true" => Some(Token::Boolean(true)),
+          "false" => Some(Token::Boolean(false)),
+          "null" => Some(Token::Null),
+          _ => None,
+        };
+
+        if let Some(literal_token) = literal_opt {
+          tokens.push(literal_token);
+          idx = end_word_idx;
+          continue;
+        }
 
         if let Some(constant) = Constant::from_string(&word) {
           tokens.push(Token::Const(constant));

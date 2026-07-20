@@ -13,10 +13,10 @@ use crate::{
 use paste::paste;
 use std::{
   fmt::Display,
-  ops::{Add, Div, Mul, Neg, Rem, Sub},
+  ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Rem, Sub},
 };
 
-#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum Object {
   Null,
   Number(f64),
@@ -76,13 +76,37 @@ macro_rules! obj_ops_impl {
               (Object::Number(lhs), Object::Number(rhs)) => Ok(lhs.[<$t:lower>](rhs).into()),
               (Object::Null, _) => Ok(other.clone()),
               (_, Object::Null) => Ok(self.clone()),
-              _ => {todo!()}
+              _ => {
+                return Err(EvaluationErrorRepr::TypeError {obj1: self, obj2: other, reason: TypeErrorReason::IncompatibleTypeOp(Operation::[<$t>])})
+              }
 
             }
           }
       }
     }
-  )*)
+  )*);
+}
+
+macro_rules! obj_bit_ops_impl {
+  ($t:ident, $alias:path) => (
+     impl $t for Object {
+       type Output = Result<Self, EvaluationErrorRepr>;
+
+       paste! {
+           fn [<$t:lower>](self, other: Self) -> Self::Output {
+             match (self, other) {
+               (Object::Number(lhs), Object::Number(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
+               (Object::Bool(lhs), Object::Bool(rhs)) => Ok((lhs as i64).[<$t:lower>](rhs as i64).into()),
+               (Object::Null, _) => Ok(other.clone()),
+               (_, Object::Null) => Ok(self.clone()),
+               _ => {
+                 return Err(EvaluationErrorRepr::TypeError {obj1: self, obj2: other, reason: TypeErrorReason::IncompatibleTypeOp(Operation::[<$alias>])})
+               }
+             }
+           }
+       }
+     }
+   )
 }
 
 macro_rules! obj_assign_ops_impl {
@@ -99,9 +123,9 @@ macro_rules! obj_assign_ops_impl {
               (Object::Number(rhs), Object::Vec3D(lhs)) | (Object::Vec3D(lhs), Object::Number(rhs)) => *self = lhs.[<$t:lower>](rhs).into(),
               (Object::Number(lhs), Object::Number(n_rhs)) => *self = lhs.[<$t:lower>](n_rhs).into(),
               (Object::Null, _) => {*self = other},
-             _ => {
-               return Err(EvaluationErrorRepr::TypeError {obj1: *self, obj2: other, reason: TypeErrorReason::IncompatibleTypeOp(Operation::[<$t>])})
-             }
+              _ => {
+                return Err(EvaluationErrorRepr::TypeError {obj1: *self, obj2: other, reason: TypeErrorReason::IncompatibleTypeOp(Operation::[<$t>])})
+              }
            };
 
            Ok(())
@@ -109,10 +133,13 @@ macro_rules! obj_assign_ops_impl {
         }
       )*
     }
-  )
+  );
 }
 
 obj_ops_impl! {Add Sub Mul Div Rem}
+obj_bit_ops_impl! {BitAnd, And}
+obj_bit_ops_impl! {BitOr, Or}
+obj_bit_ops_impl! {BitXor, Exp}
 obj_assign_ops_impl! {Add Sub Mul Div Rem}
 
 impl Object {
@@ -227,6 +254,18 @@ impl TryInto<Vec3D> for Object {
 impl From<f64> for Object {
   fn from(value: f64) -> Self {
     Object::Number(value)
+  }
+}
+
+impl From<i64> for Object {
+  fn from(value: i64) -> Self {
+    Object::Number(value as f64)
+  }
+}
+
+impl From<u64> for Object {
+  fn from(value: u64) -> Self {
+    Object::Number(value as f64)
   }
 }
 

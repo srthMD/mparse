@@ -36,6 +36,8 @@ pub enum Expression {
   Number(f64),
   Constant(Constant),
   Field(String),
+  Boolean(bool),
+  Null,
 
   Unary {
     op: Operation,
@@ -67,6 +69,8 @@ impl Display for Expression {
       Expression::Constant(constant) => write!(f, "{}", constant.as_str()),
       Expression::Field(s) => write!(f, "{}", s),
       Expression::Unary { op, expr } => write!(f, "{}({})", op.as_str(), expr),
+      Expression::Null => write!(f, "null"),
+      Expression::Boolean(b) => write!(f, "{}", b),
       Expression::Binary { op, left, right } => write!(f, "({} {} {})", left, op.as_str(), right),
       Expression::Function { func, exprs } => {
         let ftype = func.get_function_type();
@@ -101,20 +105,19 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
     Token::Number(n) => Expression::Number(n),
     Token::Const(constant) => Expression::Constant(constant),
     Token::Field(ref s) => Expression::Field(s.clone()),
-    Token::Operator(op) => match op {
-      Operation::Sub => {
-        let prefix_bp = op.get_prefix_bp().expect("unreachable");
+    Token::Boolean(b) => Expression::Boolean(b),
+    Token::Null => Expression::Null,
+    Token::Operator(op) => {
+      if let Some(prefix_bp) = op.get_prefix_bp() {
         let rhs = expr(tokens, prefix_bp)?;
         Expression::Unary {
           op,
           expr: Box::new(rhs),
         }
-      }
-
-      _ => {
+      } else {
         return Err(ParseErrorRepr::UnexpectedOperator(op));
       }
-    },
+    }
 
     Token::Function(function) => {
       tokens.expect(Token::OpenBracket)?;
