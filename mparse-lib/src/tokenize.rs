@@ -132,7 +132,7 @@ pub enum Token {
 impl Display for Token {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Token::Number(num) => write!(f, "{}", num.to_string()),
+      Token::Number(num) => write!(f, "{}", num),
       Token::Const(constant) => write!(f, "{}", constant.as_str()),
       Token::Operator(operation) => write!(f, "{}", operation.as_str()),
       Token::Boolean(b) => write!(f, "{}", b),
@@ -255,7 +255,7 @@ mod util {
   };
 
   // Seeks to the end of a number, exclusive.
-  pub fn seek_end_of_num(chars: &Vec<char>, mut idx: usize) -> usize {
+  pub fn seek_end_of_num(chars: &[char], mut idx: usize) -> usize {
     loop {
       if chars.len() == idx {
         break;
@@ -274,7 +274,7 @@ mod util {
   }
 
   pub fn parse_number(
-    chars: &Vec<char>,
+    chars: &[char],
     start_idx: usize,
   ) -> Result<(f64, usize), ParseFloatError> {
     let end_idx = seek_end_of_num(chars, start_idx);
@@ -285,7 +285,7 @@ mod util {
     Ok((res, end_idx))
   }
 
-  pub fn seek_word(chars: &Vec<char>, start_idx: usize) -> (String, usize) {
+  pub fn seek_word(chars: &[char], start_idx: usize) -> (String, usize) {
     let mut s = String::with_capacity(4);
     let mut current_idx = start_idx;
 
@@ -296,7 +296,7 @@ mod util {
 
       let chr = chars[current_idx];
       if chr.is_ascii_alphanumeric() {
-        s.push(chr as char);
+        s.push(chr);
       } else {
         break;
       }
@@ -308,7 +308,7 @@ mod util {
   }
 
   pub fn seek_char_predicate(
-    chars: &Vec<char>,
+    chars: &[char],
     pred: impl Fn(char) -> bool,
     start_idx: usize,
   ) -> Option<usize> {
@@ -329,12 +329,12 @@ mod util {
     None
   }
 
-  pub fn seek_next_non_whitespace_char(chars: &Vec<char>, start_idx: usize) -> Option<usize> {
-    return seek_char_predicate(chars, |chr: char| !chr.is_whitespace(), start_idx);
+  pub fn seek_next_non_whitespace_char(chars: &[char], start_idx: usize) -> Option<usize> {
+    seek_char_predicate(chars, |chr: char| !chr.is_whitespace(), start_idx)
   }
 
   pub fn is_ascii_numeric(chr: char) -> bool {
-    chr >= '0' && chr <= '9'
+    chr.is_ascii_digit()
   }
 
   pub fn seek_first_valid_const(word: &[u8]) -> (Option<Constant>, usize) {
@@ -370,16 +370,16 @@ mod util {
   }
 
   pub fn extract_base(
-    chars: &Vec<char>,
+    chars: &[char],
     ftype: FunctionType,
-    word: &String,
+    word: &str,
     idx: usize,
     end_idx: usize,
   ) -> Result<(f64, usize), TokenizeErrorRepr> {
     // if a function is going to have a base there should be atleast two more characters
     if chars.len() <= end_idx + 3 {
       return Err(TokenizeErrorRepr::new(
-        TokenizeErrorType::MalformedFunction(word.clone()),
+        TokenizeErrorType::MalformedFunction(word.to_owned()),
         idx,
       ));
     }
@@ -399,7 +399,7 @@ mod util {
       num_parse_idx = end_idx + 1
     }
 
-    if !is_ascii_numeric(char_to_test as char) {
+    if !char_to_test.is_ascii_digit() {
       return Err(TokenizeErrorRepr::new(
         TokenizeErrorType::NonNumericalBase(ftype),
         idx,
@@ -413,7 +413,7 @@ mod util {
         num_end_idx,
       );
       let next_char_idx_opt = seek_next_non_whitespace_char(chars, num_end_idx);
-
+        
       if next_char_idx_opt.is_some() && next_bracket_idx_opt.is_some() {
         if next_char_idx_opt.expect("unreachable") != next_bracket_idx_opt.expect("unreachable") {
           return Err(TokenizeErrorRepr::new(
@@ -423,7 +423,7 @@ mod util {
         }
       } else {
         return Err(TokenizeErrorRepr::new(
-          TokenizeErrorType::MalformedFunction(word.clone()),
+          TokenizeErrorType::MalformedFunction(word.to_owned()),
           idx,
         ));
       }
@@ -434,12 +434,12 @@ mod util {
         base = num;
       }
 
-      return Ok((base, num_end_idx));
+      Ok((base, num_end_idx))
     } else {
-      return Err(TokenizeErrorRepr::new(
+      Err(TokenizeErrorRepr::new(
         TokenizeErrorType::NumberParseError,
         num_parse_idx,
-      ));
+      ))
     }
   }
 
@@ -469,7 +469,7 @@ mod util {
   pub fn handle_operator(
     op: Operation,
     idx: usize,
-    chars: &Vec<char>,
+    chars: &[char],
     tokens: &mut Vec<Token>,
   ) -> Result<usize, TokenizeErrorRepr> {
     if op == Operation::Dot {
@@ -497,13 +497,13 @@ mod util {
     }
 
     tokens.push(Token::Operator(op));
-    return Ok(idx + 1);
+    Ok(idx + 1)
   }
 }
 
 /// The primary function for tokenization.
 fn tokenize_part(
-  chars: &Vec<char>,
+  chars: &[char],
   start_idx: usize,
   end_idx: usize,
 ) -> Result<Vec<Token>, TokenizeErrorRepr> {
@@ -629,7 +629,7 @@ fn tokenize_part(
                 }
 
                 let (base_res, base_end_idx) =
-                  util::extract_base(chars, ftype.clone(), &word, idx, end_word_idx)?;
+                  util::extract_base(chars, ftype, &word, idx, end_word_idx)?;
                 base = Some(base_res);
 
                 start_seek_idx = base_end_idx;

@@ -105,6 +105,7 @@ pub static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|
     Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout
     ToNum Xor Midpoint Clamp Min Max StdDev Csc Sec Cot
   }
+
   map
 });
 
@@ -226,7 +227,7 @@ pub enum FunctionType {
 impl FunctionType {
   /// Attempts to construct a function type from a string representation.
   /// Returns None if it cannot find a matching type.
-  pub(crate) fn from_string(st: &String) -> Option<Self> {
+  pub(crate) fn from_string(st: &str) -> Option<Self> {
     let lower = st.to_lowercase();
     match lower.as_str() {
       "log" => Some(Self::Log),
@@ -317,7 +318,7 @@ pub struct Function {
 
 impl Function {
   pub fn new(ftype: FunctionType, sub: Option<f64>) -> Self {
-    Self { ftype, sub: sub }
+    Self { ftype, sub }
   }
 
   #[allow(dead_code)]
@@ -352,7 +353,7 @@ impl Function {
       }
 
       if self.ftype.is_trig() && deg_mode {
-        let arg: f64 = (*args.get(0).expect("unreachable")).try_into()?;
+        let arg: f64 = (*args.first().expect("unreachable")).try_into()?;
         args.remove(0);
         args.insert(0, arg.to_degrees().into());
       }
@@ -364,11 +365,11 @@ impl Function {
   }
 
   fn check_args(
-    user_args: &Vec<Object>,
+    user_args: &[Object],
     builtin_args: &BuiltinArgs,
   ) -> Result<(), FunctionEvaluationError> {
     fn verify_varargs(
-      user_args: &Vec<Object>,
+      user_args: &[Object],
       expected_kind: ObjectKind,
     ) -> Result<(), FunctionEvaluationError> {
       for i in 0..user_args.len() {
@@ -400,8 +401,8 @@ impl Function {
     }
 
     fn verify_explicit(
-      user_args: &Vec<Object>,
-      builtin_args: &Box<[ObjectKind]>,
+      user_args: &[Object],
+      builtin_args: &[ObjectKind],
     ) -> Result<(), FunctionEvaluationError> {
       if user_args.len() != builtin_args.len() {
         return Err(FunctionEvaluationError::InvalidArgCount {
@@ -445,8 +446,8 @@ impl Function {
     }
 
     fn verify_mixed(
-      user_args: &Vec<Object>,
-      builtin_args: &Box<[ObjectKind]>,
+      user_args: &[Object],
+      builtin_args: &[ObjectKind],
       vararg_kind: ObjectKind,
     ) -> Result<(), FunctionEvaluationError> {
       if user_args.len() < builtin_args.len() {
@@ -456,13 +457,13 @@ impl Function {
         });
       }
 
-      let expl_res = verify_explicit(&user_args[0..=builtin_args.len()].to_vec(), builtin_args);
+      let expl_res = verify_explicit(&user_args[0..=builtin_args.len()], builtin_args);
       if expl_res.is_err() {
         return expl_res;
       }
 
       if user_args.len() > builtin_args.len() {
-        let vararg_res = verify_varargs(&user_args[builtin_args.len()..].to_vec(), vararg_kind);
+        let vararg_res = verify_varargs(&user_args[builtin_args.len()..], vararg_kind);
         if vararg_res.is_err() {
           return vararg_res;
         }
@@ -473,15 +474,15 @@ impl Function {
 
     match builtin_args {
       BuiltinArgs::Varargs(expected_kind) => {
-        return verify_varargs(&user_args, *expected_kind);
+        return verify_varargs(user_args, *expected_kind);
       }
-      BuiltinArgs::Explicit(object_kinds) => return verify_explicit(&user_args, object_kinds),
+      BuiltinArgs::Explicit(object_kinds) => return verify_explicit(user_args, object_kinds),
       BuiltinArgs::Mixed {
         explicit_t,
         varargs_t,
-      } => return verify_mixed(&user_args, explicit_t, *varargs_t),
+      } => return verify_mixed(user_args, explicit_t, *varargs_t),
       BuiltinArgs::None => {
-        if user_args.len() != 0 {
+        if !user_args.is_empty() {
           return Err(FunctionEvaluationError::InvalidArgCount {
             expected: 0,
             got: user_args.len(),
@@ -965,7 +966,7 @@ mod impls {
   decl_returns! {tonum, Number}
 
   pub fn xor(_: &Function, args: &[Object]) -> BuiltinFnOutput {
-    Ok((args[0] ^ args[1])?)
+    args[0] ^ args[1]
   }
   decl_arg_types! {xor, anyof: (Number, Bool), anyof: (Number, Bool)}
   decl_returns! {xor, anyof: Number, Bool}
@@ -1065,14 +1066,14 @@ mod helpers {
 
   pub fn lcm(a: f64, b: f64) -> Result<f64, FunctionEvaluationError> {
     if a == 0f64 || b == 0f64 {
-      return Ok(0f64.into());
+      return Ok(0f64);
     }
 
     let ab = a * b;
     if !ab.is_infinite() {
       return match gcf(a, b).try_into().expect("unreachable") {
         0f64 => Err(FunctionEvaluationError::DivisionByZero),
-        g_res => Ok((ab / g_res).into()),
+        g_res => Ok(ab / g_res),
       };
     }
 
@@ -1100,21 +1101,21 @@ mod helpers {
 
     #[test]
     fn test_gcf() {
-      assert_eq!(gcf(6f64, 3f64), 3f64.into());
-      assert_eq!(gcf(99f64, 2f64), 1f64.into());
-      assert_eq!(gcf(1f64, 1f64), 1f64.into());
-      assert_eq!(gcf(6f64, 0f64), 6f64.into());
-      assert_eq!(gcf(0f64, 24f64), 24f64.into());
-      assert_eq!(gcf(2934f64, 24f64), 6f64.into());
+      assert_eq!(gcf(6f64, 3f64), 3f64);
+      assert_eq!(gcf(99f64, 2f64), 1f64);
+      assert_eq!(gcf(1f64, 1f64), 1f64);
+      assert_eq!(gcf(6f64, 0f64), 6f64);
+      assert_eq!(gcf(0f64, 24f64), 24f64);
+      assert_eq!(gcf(2934f64, 24f64), 6f64);
     }
 
     #[test]
     fn test_lcm() {
-      assert_eq!(lcm(12f64, 18f64).unwrap(), 36f64.into());
-      assert_eq!(lcm(82f64, 4f64).unwrap(), 164f64.into());
-      assert_eq!(lcm(3f64, 35f64).unwrap(), 105f64.into());
-      assert_eq!(lcm(0f64, 18f64).unwrap(), 0f64.into());
-      assert_eq!(lcm(18f64, 0f64).unwrap(), 0f64.into());
+      assert_eq!(lcm(12f64, 18f64).unwrap(), 36f64);
+      assert_eq!(lcm(82f64, 4f64).unwrap(), 164f64);
+      assert_eq!(lcm(3f64, 35f64).unwrap(), 105f64);
+      assert_eq!(lcm(0f64, 18f64).unwrap(), 0f64);
+      assert_eq!(lcm(18f64, 0f64).unwrap(), 0f64);
     }
   }
 }

@@ -136,8 +136,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
           };
 
           let obj_left = evaluate(left, deg_mode)?;
-          let val = obj_left.access_field(field)?;
-          val
+          obj_left.access_field(field)?
         }
         _ => return Err(EvaluationErrorRepr::UnexpectedOperator(*op)),
       };
@@ -200,7 +199,7 @@ fn factorial_f64(num: f64) -> Result<f64, EvaluationErrorRepr> {
     res *= i as f64;
   }
 
-  return Ok(res);
+  Ok(res)
 }
 
 fn factorial_vec2d(vec: &Vec2D) -> Result<Vec2D, EvaluationErrorRepr> {

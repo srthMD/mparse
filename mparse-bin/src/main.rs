@@ -113,11 +113,8 @@ fn main() {
 
 fn parse(args: &Args) -> Result<Object, Error> {
   let tokens_res = Tokens::new(args.input.as_ref().expect("unreachable").as_str());
-  match tokens_res {
-    Err(e) => {
-      return Err(Error::TokenizeError(e));
-    }
-    _ => {}
+  if let Err(e) = tokens_res {
+    return Err(Error::TokenizeError(e));
   }
 
   let tokens = tokens_res.expect("unreachable");
@@ -126,11 +123,8 @@ fn parse(args: &Args) -> Result<Object, Error> {
   }
 
   let ast_res = Expression::new(&tokens);
-  match ast_res {
-    Err(e) => {
-      return Err(Error::ParseError(e));
-    }
-    _ => {}
+  if let Err(e) = ast_res {
+    return Err(Error::ParseError(e));
   }
 
   let ast = ast_res.expect("unreachable");

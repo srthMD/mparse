@@ -40,7 +40,7 @@ impl Constant {
 
   /// Constructs a [Constant] from a string representation.
   /// Returns None if the input does not correspond to a known constant.
-  pub fn from_string(st: &String) -> Option<Self> {
+  pub fn from_string(st: &str) -> Option<Self> {
     let lower = st.to_lowercase();
 
     match lower.as_str() {
