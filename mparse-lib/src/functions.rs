@@ -103,7 +103,7 @@ pub static BUILTIN_FUNCTIONS: Lazy<HashMap<FunctionType, Builtin>> = Lazy::new(|
 
   builtin_impl! {map,
     Root Log Rand Gcf Lcm Mean Abs Ceil Floor Vec2D Vec3D Magnitude Distance Cross Dot Project Unit Angle SignedAngle Out Binout
-    ToNum Xor Midpoint Clamp Min Max StdDev
+    ToNum Xor Midpoint Clamp Min Max StdDev Csc Sec Cot
   }
   map
 });
@@ -180,6 +180,9 @@ pub enum FunctionType {
   Sin,
   Cos,
   Tan,
+  Sec,
+  Csc,
+  Cot,
   Arcsin,
   Arccos,
   Arctan,
@@ -234,6 +237,9 @@ impl FunctionType {
       "sin" => Some(Self::Sin),
       "cos" => Some(Self::Cos),
       "tan" => Some(Self::Tan),
+      "csc" => Some(Self::Csc),
+      "sec" => Some(Self::Sec),
+      "cot" => Some(Self::Cot),
       "arcsin" | "asin" => Some(Self::Arcsinh),
       "arccos" | "acos" => Some(Self::Arccos),
       "arctan" | "atan" => Some(Self::Arctan),
@@ -288,7 +294,7 @@ impl FunctionType {
 
   fn is_trig(&self) -> bool {
     match self {
-      Self::Sin | Self::Cos | Self::Tan | Self::Arcsin | Self::Arccos | Self::Arctan => true,
+      Self::Sin | Self::Cos | Self::Tan | Self::Arcsin | Self::Arccos | Self::Arctan | Self::Csc | Self::Sec | Self::Cot => true,
       _ => false,
     }
   }
@@ -1025,6 +1031,27 @@ mod impls {
   }
   decl_arg_types! {stddev, vararg: Number}
   decl_returns! {stddev, Number}
+
+  pub fn csc(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let arg: f64 = args[0].try_into()?;
+    Ok((1f64 / arg.sin()).into())
+  }
+  decl_arg_types! {csc, Number}
+  decl_returns! {csc, Number}
+
+  pub fn sec(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let arg: f64 = args[0].try_into()?;
+    Ok((1f64 / arg.cos()).into())
+  }
+  decl_arg_types! {sec, Number}
+  decl_returns! {sec, Number}
+
+  pub fn cot(_: &Function, args: &[Object]) -> BuiltinFnOutput {
+    let arg: f64 = args[0].try_into()?;
+    Ok((arg.cos() / arg.sin()).into())
+  }
+  decl_arg_types! {cot, Number}
+  decl_returns! {cot, Number}
 }
 
 mod helpers {
