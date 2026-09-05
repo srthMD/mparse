@@ -201,6 +201,9 @@ pub enum TokenizeErrorType {
   /// Thrown when the tokenizer finds something like Eq but the input ends right after.
   #[error("malformed infix operator found at end of input")]
   MalformedOperator,
+  /// Thrown when the tokenizer finds a pair of brackets that was not properly closed.
+  #[error("expected a closing bracket")]
+  MissingClosingBracket,
 }
 
 /// Encapsulating struct for tokenization errors so that we can
@@ -254,6 +257,33 @@ mod util {
     },
   };
 
+  pub fn find_closing_bracket(chars: &[char], mut idx: usize) -> Option<usize> {
+    let mut score = 0usize;
+    loop {
+      if chars.len() == idx {
+        return None;
+      }
+
+      let chr = chars[idx];
+
+      match char_is_bracket(chr) {
+        Some(b_type) => match b_type {
+          BracketType::Opening => score += 1,
+          BracketType::Closing => {
+            if score <= 1 {
+              return Some(idx);
+            } else {
+              score -= 1;
+            }
+          }
+        },
+        None => {}
+      }
+
+      idx += 1;
+    }
+  }
+
   // Seeks to the end of a number, exclusive.
   pub fn seek_end_of_num(chars: &[char], mut idx: usize) -> usize {
     loop {
@@ -273,10 +303,7 @@ mod util {
     idx
   }
 
-  pub fn parse_number(
-    chars: &[char],
-    start_idx: usize,
-  ) -> Result<(f64, usize), ParseFloatError> {
+  pub fn parse_number(chars: &[char], start_idx: usize) -> Result<(f64, usize), ParseFloatError> {
     let end_idx = seek_end_of_num(chars, start_idx);
     let slice = &chars[start_idx..end_idx];
     let as_string = slice.iter().collect::<String>();
@@ -413,7 +440,7 @@ mod util {
         num_end_idx,
       );
       let next_char_idx_opt = seek_next_non_whitespace_char(chars, num_end_idx);
-        
+
       if next_char_idx_opt.is_some() && next_bracket_idx_opt.is_some() {
         if next_char_idx_opt.expect("unreachable") != next_bracket_idx_opt.expect("unreachable") {
           return Err(TokenizeErrorRepr::new(
@@ -664,6 +691,14 @@ fn tokenize_part(
       }
 
       _ if let Some(bracket_type) = util::char_is_bracket(chr) => {
+        let closing_bracket_idx = util::find_closing_bracket(chars, idx);
+        if let None = closing_bracket_idx {
+          return Err(TokenizeErrorRepr::new(
+            TokenizeErrorType::MissingClosingBracket,
+            idx,
+          ));
+        }
+
         tokens.push(bracket_type.to_token());
       }
 
