@@ -148,15 +148,15 @@ pub enum FunctionEvaluationError {
 type BuiltinFnOutput = Result<Object, EvaluationErrorRepr>;
 type BuiltinFn = fn(&Function, &[Object]) -> BuiltinFnOutput;
 
+#[derive(Debug, Clone)]
 pub struct Builtin {
   func: BuiltinFn,
   arg_t: BuiltinArgs,
-  /// Currently unused.
-  #[allow(dead_code)]
   returns: ObjectKind,
 }
 
 /// Describes the argument types that a function takes in.
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum BuiltinArgs {
   /// Varargs where all argument types have to match the discriminant provided.
   Varargs(ObjectKind),
@@ -297,6 +297,28 @@ impl FunctionType {
   pub(crate) fn outputs_angle(&self) -> bool {
     matches!(self, Self::Angle)
   }
+
+  pub(crate) fn get_builtin(&self) -> Option<&Builtin> {
+    BUILTIN_FUNCTIONS.get(self)
+  }
+
+  pub(crate) fn get_args(&self) -> Option<BuiltinArgs> {
+    let builtin = FunctionType::get_builtin(self);
+    if let Some(b) = builtin {
+      return Some(b.arg_t.clone());
+    }
+
+    None
+  }
+
+  pub(crate) fn get_output(&self) -> Option<ObjectKind> {
+    let builtin = FunctionType::get_builtin(self);
+    if let Some(b) = builtin {
+      return Some(b.returns);
+    }
+
+    None
+  } 
 }
 
 /// Encapsulating structure describing a function and its base if it
@@ -336,7 +358,7 @@ impl Function {
   /// Evaluates a function given some args.
   /// Evaluation can fail, see [FunctionEvaluationError] for more info.
   pub fn eval(&self, mut args: Vec<Object>, deg_mode: bool) -> Result<Object, EvaluationErrorRepr> {
-    let builtin_opt = BUILTIN_FUNCTIONS.get(&self.ftype);
+    let builtin_opt = self.ftype.get_builtin();
     if let Some(builtin) = builtin_opt {
       match Self::check_args(&args, &builtin.arg_t) {
         Ok(_) => {}

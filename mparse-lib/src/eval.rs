@@ -152,9 +152,13 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
       }
 
       let res = func.eval(results, deg_mode);
+      #[allow(clippy::question_mark)]
       if let Ok(mut yipee) = res {
-        if func.get_function_type().outputs_angle() && deg_mode {
-          // if the function outputs an angle it has to be a number, right... RIGHT?????
+        let ftype = func.get_function_type();
+        if ftype.outputs_angle()
+          && deg_mode
+          && matches!(ftype.get_output().expect("unreachable"), ObjectKind::Number)
+        {
           let num: f64 = yipee.try_into().expect("unreachable");
           yipee = num.to_degrees().into();
         }
