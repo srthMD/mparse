@@ -287,24 +287,15 @@ impl FunctionType {
   /// If a function annotated with a base does not support a base,
   /// an error will be thrown somewhere within the parsing process.
   pub(crate) fn supports_base(&self) -> bool {
-    match self {
-      Self::Log | Self::Root => true,
-      _ => false,
-    }
+    matches!(self, Self::Log | Self::Root)
   }
 
   fn is_trig(&self) -> bool {
-    match self {
-      Self::Sin | Self::Cos | Self::Tan | Self::Arcsin | Self::Arccos | Self::Arctan | Self::Csc | Self::Sec | Self::Cot => true,
-      _ => false,
-    }
+    matches!(self, Self::Sin | Self::Cos | Self::Tan | Self::Arcsin | Self::Arccos | Self::Arctan | Self::Csc | Self::Sec | Self::Cot)
   }
 
   pub(crate) fn outputs_angle(&self) -> bool {
-    match self {
-      Self::Angle => true,
-      _ => false,
-    }
+    matches!(self, Self::Angle)
   }
 }
 
@@ -355,7 +346,7 @@ impl Function {
       if self.ftype.is_trig() && deg_mode {
         let arg: f64 = (*args.first().expect("unreachable")).try_into()?;
         args.remove(0);
-        args.insert(0, arg.to_degrees().into());
+        args.insert(0, arg.to_radians().into());
       }
 
       (builtin.func)(self, args.as_slice())
@@ -1071,7 +1062,7 @@ mod helpers {
 
     let ab = a * b;
     if !ab.is_infinite() {
-      return match gcf(a, b).try_into().expect("unreachable") {
+      return match gcf(a, b) {
         0f64 => Err(FunctionEvaluationError::DivisionByZero),
         g_res => Ok(ab / g_res),
       };
