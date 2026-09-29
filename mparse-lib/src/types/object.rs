@@ -2,12 +2,8 @@ use crate::{
   eval::{
     EvaluationErrorRepr,
     TypeErrorReason::{self, InvalidCast},
-  },
-  operators::Operation,
-  types::{
-    field::FieldAccess,
-    object::Object::Null,
-    vector::{Vec2D, Vec3D},
+  }, operators::Operation, types::{
+    field::FieldAccess, object::Object::Null, vector::{Vec2D, Vec3D},
   },
 };
 use paste::paste;
@@ -25,7 +21,7 @@ pub enum Object {
   Vec3D(Vec3D),
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Eq, Hash)]
 pub enum ObjectKind {
   Null,
   Number,

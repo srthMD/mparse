@@ -1,18 +1,12 @@
 use std::{
-  fmt::{self},
-  ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Not, Rem, Sub},
-  vec,
+  fmt::{self}, ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Not, Rem, Sub}, vec,
 };
 
 use thiserror::Error;
 
 use crate::{
-  ast::Expression,
-  functions::{FunctionEvaluationError, FunctionType},
-  operators::Operation,
-  types::{
-    object::{Object, ObjectKind},
-    vector::{Vec2D, Vec3D},
+  ast::Expression, functions::{FunctionEvaluationError, FunctionType}, operators::Operation, types::{
+    object::{Object, ObjectKind}, vector::{Vec2D, Vec3D},
   },
 };
 
@@ -167,7 +161,7 @@ pub fn evaluate(expr: &Expression, deg_mode: bool) -> Result<Object, EvaluationE
       } else {
         return res;
       }
-    }
+    },
   }
 
   Ok(final_result)

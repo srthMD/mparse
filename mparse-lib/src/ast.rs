@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display};
 
 use thiserror::Error;
 
@@ -137,7 +137,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
       }
 
       let next = tokens.next();
-      if next != Token::CloseBracket && next != Token::Eof {
+      if next != Token::CloseBracket || next != Token::Eof {
         return Err(ParseErrorRepr::make_invalid_seq(tok, next));
       }
 
@@ -146,6 +146,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
         exprs,
       }
     }
+
     Token::OpenBracket => {
       let rhs = expr(tokens, 0)?;
       let next = tokens.next();

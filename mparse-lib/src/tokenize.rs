@@ -121,9 +121,9 @@ pub enum Token {
   Comma,
   /// Found after the dot operator to indicate indexing of an object.
   Field(String),
-  // The "true" or "false" literals.
+  /// The "true" or "false" literals.
   Boolean(bool),
-  // The "null" literal
+  /// The "null" literal
   Null,
   /// Internally used when the end of the token sequence is reached.
   Eof,
