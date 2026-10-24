@@ -123,6 +123,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
       tokens.expect(Token::OpenBracket)?;
       let mut exprs = Vec::<Expression>::new();
 
+      // if there are arguments
       if tokens.peek() != Token::CloseBracket {
         loop {
           exprs.push(expr(tokens, 0)?);
@@ -137,7 +138,7 @@ fn expr(tokens: &Tokens, min_bp: u8) -> Result<Expression, ParseErrorRepr> {
       }
 
       let next = tokens.next();
-      if next != Token::CloseBracket || next != Token::Eof {
+      if next != Token::CloseBracket {
         return Err(ParseErrorRepr::make_invalid_seq(tok, next));
       }
 
